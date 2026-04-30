@@ -11,7 +11,7 @@ from web3 import Web3
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # ---------------------------------------------------------------------------
-# Ayarlar (.env'den okunur)
+# Configuration (Loaded from .env)
 # ---------------------------------------------------------------------------
 
 OFFLINE_MODE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
@@ -36,7 +36,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# ABI Yükleme
+# Load ABI
 # ---------------------------------------------------------------------------
 
 ABI_PATH = os.path.join(os.path.dirname(__file__), "contract_abi.json")
@@ -47,29 +47,29 @@ else:
     CONTRACT_ABI = []
 
 # ---------------------------------------------------------------------------
-# Web3 Bağlantısı
+# Web3 Connection
 # ---------------------------------------------------------------------------
 
 def connect_web3():
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     if not w3.is_connected():
-        raise ConnectionError(f"RPC bağlantısı kurulamadı: {RPC_URL}")
-    logger.info(f"RPC bağlandı: {RPC_URL}")
+        raise ConnectionError(f"Failed to connect to RPC: {RPC_URL}")
+    logger.info(f"Connected to RPC: {RPC_URL}")
     return w3
 
 # ---------------------------------------------------------------------------
-# Blockchain İşlemleri
+# Blockchain Operations
 # ---------------------------------------------------------------------------
 
 def get_latest_pending_id(w3) -> int:
-    """Blockchain'den en son bekleyen (pending) görev ID'sini bulur."""
+    """Finds the latest pending commitment ID from the blockchain."""
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
     try:
         total = contract.functions.commitmentCount().call()
         if total == 0:
             return 0
         
-        # Sondan başa doğru kontrol et
+        # Check from latest to oldest
         for i in range(total, 0, -1):
             status = contract.functions.getCommitment(i).call()
             # status: user, amount, goal, githubUsername, completed, failed, refunded
@@ -78,7 +78,7 @@ def get_latest_pending_id(w3) -> int:
                 return i
         return 0
     except Exception as e:
-        logger.error(f"ID bulma hatası: {e}")
+        logger.error(f"Error finding ID: {e}")
         return 0
 
 def call_complete_task(w3, commitment_id):
@@ -99,21 +99,21 @@ def call_complete_task(w3, commitment_id):
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     
     if receipt.status == 1:
-        logger.info(f"completeTask başarılı! TX: {receipt.transactionHash.hex()}")
+        logger.info(f"completeTask successful! TX: {receipt.transactionHash.hex()}")
     else:
-        logger.error(f"completeTask başarısız! TX: {receipt.transactionHash.hex()}")
+        logger.error(f"completeTask failed! TX: {receipt.transactionHash.hex()}")
     return receipt.transactionHash.hex()
 
 # ---------------------------------------------------------------------------
-# GitHub Doğrulama
+# GitHub Validation
 # ---------------------------------------------------------------------------
 
 def check_github_commit(username: str) -> bool:
     """
-    Kullanıcının bugün 10-30 satır arası değişiklik içeren bir commit atıp atmadığını kontrol eder.
+    Checks if the user has pushed a commit today with 10-30 lines of changes.
     """
     if not GITHUB_TOKEN:
-        logger.warning("GITHUB_TOKEN ayarlanmamış. Kontrol atlanıyor.")
+        logger.warning("GITHUB_TOKEN not set. Skipping check.")
         return False
 
     headers = {
@@ -127,7 +127,7 @@ def check_github_commit(username: str) -> bool:
     try:
         resp = requests.get(url, headers=headers)
         if resp.status_code != 200:
-            logger.error(f"GitHub API hatası: {resp.status_code}")
+            logger.error(f"GitHub API error: {resp.status_code}")
             return False
         
         events = resp.json()
@@ -138,9 +138,9 @@ def check_github_commit(username: str) -> bool:
                 if created_at == today:
                     commits = event['payload'].get('commits', [])
                     
-                    # GitHub API bazen commits listesini payload'da vermez, sadece 'head' SHA'sini verir.
+                    # GitHub API sometimes omits the commits list in payload, providing only 'head' SHA.
                     if not commits and 'head' in event['payload']:
-                        logger.info("Payload'da commit listesi yok, 'head' SHA kullaniliyor.")
+                        logger.info("No commit list in payload, using 'head' SHA.")
                         commits = [{'sha': event['payload']['head']}]
                     
                     for commit in commits:
@@ -158,34 +158,34 @@ def check_github_commit(username: str) -> bool:
                                 total_changes = stats.get('total', 0)
                                 
                                 if MIN_LINES <= total_changes <= MAX_LINES:
-                                    logger.info(f"Geçerli commit bulundu! SHA: {sha}, Satır: {total_changes}")
+                                    logger.info(f"Valid commit found! SHA: {sha}, Lines: {total_changes}")
                                     return True
                                 else:
-                                    logger.info(f"Commit bulundu ama satır sayısı ({total_changes}) aralık dışında [{MIN_LINES}-{MAX_LINES}]")
+                                    logger.info(f"Commit found but line count ({total_changes}) is out of range [{MIN_LINES}-{MAX_LINES}]")
                         except Exception as e:
-                            logger.warning(f"Commit detayları alınamadı: {e}")
+                            logger.warning(f"Could not fetch commit details: {e}")
                             continue
         return False
     except Exception as e:
-        logger.error(f"GitHub kontrol hatası: {e}")
+        logger.error(f"GitHub check error: {e}")
         return False
 
 # ---------------------------------------------------------------------------
-# Ana Döngü
+# Main Loop
 # ---------------------------------------------------------------------------
 
 def main():
     logger.info("=" * 60)
     logger.info("Discipline Protocol - GitHub Validator Agent")
     if OFFLINE_MODE:
-        logger.info("MOD: OFFLINE (Sadece simülasyon)")
+        logger.info("MODE: OFFLINE (Simulation only)")
     logger.info("=" * 60)
     
     w3 = None
     if not OFFLINE_MODE:
         w3 = connect_web3()
     
-    logger.info(f"Kontrol periyodu: 60 saniye. Min Satır: {MIN_LINES}, Max Satır: {MAX_LINES}")
+    logger.info(f"Check interval: 60s. Min Lines: {MIN_LINES}, Max Lines: {MAX_LINES}")
     
     while True:
         try:
@@ -193,34 +193,34 @@ def main():
                 commitment_id = get_latest_pending_id(w3)
                 
                 if commitment_id > 0:
-                    logger.info(f"Bekleyen görev bulundu: ID {commitment_id}")
+                    logger.info(f"Pending task found: ID {commitment_id}")
                     
-                    # GitHub kullanıcı adını al
+                    # Get GitHub username from contract
                     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
                     status = contract.functions.getCommitment(commitment_id).call()
                     username = status[3] # githubUsername
                     
-                    logger.info(f"GitHub aktivitesi kontrol ediliyor: {username}")
+                    logger.info(f"Checking GitHub activity for: {username}")
                     
                     if check_github_commit(username):
                         if OFFLINE_MODE:
-                            logger.info("[OFFLINE] completeTask çağrılırdı.")
+                            logger.info("[OFFLINE] completeTask would be called.")
                         else:
                             call_complete_task(w3, commitment_id)
                     else:
-                        logger.info("Bugün için geçerli commit bulunamadı.")
+                        logger.info("No valid commit found for today.")
                 else:
-                    logger.info("Bekleyen görev yok.")
+                    logger.info("No pending tasks.")
             else:
-                logger.info("Offline mod: Blockchain kontrolü yapılmıyor.")
+                logger.info("Offline mode: Blockchain check skipped.")
             
-            time.sleep(60) # Her dakika kontrol et
+            time.sleep(60) # Check every minute
             
         except KeyboardInterrupt:
-            logger.info("Agent durduruluyor...")
+            logger.info("Agent stopping...")
             break
         except Exception as e:
-            logger.error(f"Döngü hatası: {e}")
+            logger.error(f"Loop error: {e}")
             time.sleep(60)
 
 if __name__ == "__main__":

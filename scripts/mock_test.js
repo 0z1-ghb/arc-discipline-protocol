@@ -8,7 +8,7 @@ async function main() {
   console.log("=".repeat(60));
 
   const [owner, user, validator] = await hre.ethers.getSigners();
-  console.log("\n[1] Hesaplar:");
+  console.log("\n[1] Accounts:");
   console.log("  Owner:", owner.address);
   console.log("  User:", user.address);
   console.log("  Validator:", validator.address);
@@ -25,48 +25,48 @@ async function main() {
   const protocolAddress = await protocol.getAddress();
   console.log("[3] DisciplineProtocol deployed:", protocolAddress);
 
-  console.log("\n[4] User'a 1000 USDC faucet...");
+  console.log("\n[4] Fauceting 1000 USDC to User...");
   await usdc.connect(user).faucet(1000 * 10 ** 6);
   
-  console.log("\n[5] User 100 USDC deposit yapiyor (Commitment #1)...");
-  // Yeni deposit fonksiyonu githubUsername parametresi aliyor
+  console.log("\n[5] User depositing 100 USDC (Commitment #1)...");
+  // New deposit function takes githubUsername parameter
   await usdc.connect(user).approve(protocolAddress, 100 * 10 ** 6);
-  await protocol.connect(user).deposit(100 * 10 ** 6, "Gunde 100 sayfa calisma", "test-user");
+  await protocol.connect(user).deposit(100 * 10 ** 6, "Study 100 pages daily", "test-user");
   
-  // Başlangıç skoru kontrolü
+  // Check initial score
   let scoreData = await protocol.getScore(user.address);
-  console.log("  Baslangic Skoru:", Number(scoreData.score), "| Seviye:", scoreData.level);
+  console.log("  Initial Score:", Number(scoreData.score), "| Level:", scoreData.level);
 
-  console.log("\n[6] TEST: Validator completeTask cagiriyor (Basari)...");
+  console.log("\n[6] TEST: Validator calls completeTask (Success)...");
   await protocol.connect(validator).completeTask(1);
   
-  // Skor artışı kontrolü
+  // Check score increase
   scoreData = await protocol.getScore(user.address);
-  console.log("  Yeni Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
-  console.log("  Beklenen: +10 Puan -> Novice (0-99)");
+  console.log("  New Score:", Number(scoreData.score), "| Level:", scoreData.level);
+  console.log("  Expected: +10 Points -> Novice (0-99)");
 
   const userBalanceAfter = await usdc.balanceOf(user.address);
-  console.log("  User USDC balance (refund sonrasi):", Number(userBalanceAfter) / 10 ** 6);
+  console.log("  User USDC balance (after refund):", Number(userBalanceAfter) / 10 ** 6);
 
-  console.log("\n[7] TEST: Yeni deposit ve failTask (Basarisizlik)...");
+  console.log("\n[7] TEST: New deposit and failTask (Failure)...");
   await usdc.connect(user).approve(protocolAddress, 200 * 10 ** 6);
-  await protocol.connect(user).deposit(200 * 10 ** 6, "Her gun 50 Ingilizce kelime", "test-user");
+  await protocol.connect(user).deposit(200 * 10 ** 6, "Learn 50 English words daily", "test-user");
   
-  // Fail öncesi skor
+  // Score before fail
   scoreData = await protocol.getScore(user.address);
-  console.log("  Fail Oncesi Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
+  console.log("  Score Before Fail:", Number(scoreData.score), "| Level:", scoreData.level);
 
   await protocol.connect(validator).failTask(2);
   
-  // Skor düşüşü kontrolü
+  // Check score decrease
   scoreData = await protocol.getScore(user.address);
-  console.log("  Fail Sonrasi Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
-  console.log("  Beklenen: -20 Puan -> (10 - 20 = 0, min 0) -> Novice");
+  console.log("  Score After Fail:", Number(scoreData.score), "| Level:", scoreData.level);
+  console.log("  Expected: -20 Points -> (10 - 20 = 0, min 0) -> Novice");
 
   const penaltyBalance = await usdc.balanceOf(owner.address);
   console.log("  Penalty address balance:", Number(penaltyBalance) / 10 ** 6);
 
-  console.log("\n[8] ABI kaydediliyor...");
+  console.log("\n[8] Saving ABI...");
   const artifactPath = path.join(__dirname, "..", "artifacts", "contracts", "DisciplineProtocol.sol", "DisciplineProtocol.json");
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
   const abiPath = path.join(__dirname, "..", "agent", "contract_abi.json");
@@ -74,7 +74,7 @@ async function main() {
   console.log("  ABI saved to:", abiPath);
 
   console.log("\n" + "=".repeat(60));
-  console.log("Scoring System Test Basarili!");
+  console.log("Scoring System Test Successful!");
   console.log("=".repeat(60));
 }
 

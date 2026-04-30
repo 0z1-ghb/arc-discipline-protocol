@@ -2,8 +2,8 @@ const hre = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
-// Arc Testnet USDC adresi
-const ARC_TESTNET_USDC = "0xYourUSDCAddress"; // Faucet'ten aldigin USDC
+// Arc Testnet USDC address
+const ARC_TESTNET_USDC = "0xYourUSDCAddress"; // USDC received from faucet
 
 async function main() {
   console.log("=".repeat(60));
@@ -20,19 +20,19 @@ async function main() {
   console.log("Network:", network.name, `(chainId: ${network.chainId})`);
 
   if (network.chainId !== 5042002n) {
-    console.error("\nHATA: Arc Testnet'e bagli degilsiniz! (chainId: 5042002)");
+    console.error("\nERROR: Not connected to Arc Testnet! (chainId: 5042002)");
     process.exit(1);
   }
 
-  // USDC adresi
+  // USDC address
   const usdcAddress = process.env.USDC_ADDRESS || ARC_TESTNET_USDC;
   console.log("\nUSDC Address:", usdcAddress);
 
-  // Validator ve penalty adresleri
+  // Validator and penalty addresses
   const validator = deployer.address;
   const penaltyAddress = deployer.address;
 
-  // Discipline Protocol kontratini deploy et
+  // Deploy Discipline Protocol contract
   console.log("\nDeploying DisciplineProtocol...");
   const DisciplineProtocol = await hre.ethers.getContractFactory("DisciplineProtocol");
   const protocol = await DisciplineProtocol.deploy(usdcAddress, validator, penaltyAddress);
@@ -40,7 +40,7 @@ async function main() {
   const protocolAddress = await protocol.getAddress();
   console.log("DisciplineProtocol deployed to:", protocolAddress);
 
-  // ABI kaydet
+  // Save ABI
   const abiPath = path.join(__dirname, "..", "agent", "contract_abi.json");
   const artifact = JSON.parse(fs.readFileSync(
     path.join(__dirname, "..", "artifacts", "contracts", "DisciplineProtocol.sol", "DisciplineProtocol.json"),
@@ -49,7 +49,7 @@ async function main() {
   fs.writeFileSync(abiPath, JSON.stringify(artifact.abi, null, 2));
   console.log("ABI saved to:", abiPath);
 
-  // .env guncelle
+  // Update .env.example
   const envExamplePath = path.join(__dirname, "..", ".env.example");
   const envContent = `# Arc Testnet Deployment
 OFFLINE_MODE=false
