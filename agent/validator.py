@@ -15,28 +15,22 @@ import json
 import logging
 from datetime import datetime
 
+from dotenv import load_dotenv
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from web3 import Web3
 
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 # ---------------------------------------------------------------------------
-# Ayarlar
+# Ayarlar (.env'den okunur, yoksa varsayılan değerler kullanılır)
 # ---------------------------------------------------------------------------
 
-# Offline mod: True ise RPC baglantisi yapmadan sadece dosya dogrulama yapar
-OFFLINE_MODE = True
-
-# Arc Network RPC endpoint (testnet veya mainnet)
-RPC_URL = "https://rpc.arc.network"
-
-# Akıllı kontrat adresi (deploy sonrası buraya yazilacak)
-CONTRACT_ADDRESS = "0xYourContractAddressHere"
-
-# Validator (AI ajan) private key
-PRIVATE_KEY = "0xYourPrivateKeyHere"
-
-# Ceza adresi (opsiyonel, loglama icin)
-PENALTY_ADDRESS = "0xYourPenaltyAddressHere"
+OFFLINE_MODE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
+RPC_URL = os.getenv("RPC_URL", "https://rpc.arc.network")
+CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0xYourContractAddressHere")
+PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
+PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
 
 # Izlenecek klasör yolu
 WATCH_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
