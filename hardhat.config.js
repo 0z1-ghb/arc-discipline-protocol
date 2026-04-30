@@ -6,9 +6,11 @@ module.exports = {
   networks: {
     hardhat: {},
     arcTestnet: {
-      url: "https://rpc.testnet.arc.network",
+      url: "https://rpc.blockdaemon.testnet.arc.network",
       chainId: 5042002,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gas: 5000000,
+      gasMultiplier: 1.2,
     },
   },
 };
