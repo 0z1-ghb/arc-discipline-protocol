@@ -76,19 +76,3 @@ Copy `.env.example` to `.env` and fill in your values:
 ## License
 
 MIT
-
-# Final Test Section
-This is a test commit to verify the agent.
-It contains enough lines to pass the filter.
-Lines 4 to 15 are just filler text to ensure
-we hit the minimum line count requirement.
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
