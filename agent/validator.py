@@ -244,14 +244,33 @@ def call_fail_task(w3: Web3, commitment_id: int) -> str:
 
 
 class StudyFileHandler(FileSystemEventHandler):
-    """daily_study.txt dosyasindaki degisiklikleri izler."""
+    """daily_study.txt dosyasindaki degisiklikleri izler ve otomatik ID bulur."""
 
-    def __init__(self, w3, commitment_id: int, offline: bool = False):
+    def __init__(self, w3, offline: bool = False):
         self.w3 = w3
-        self.commitment_id = commitment_id
         self.offline = offline
         self.last_processed = 0
         super().__init__()
+
+    def get_latest_pending_id(self) -> int:
+        """Blockchain'den en son bekleyen (pending) görev ID'sini bulur."""
+        contract = self.w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+        try:
+            total_count = contract.functions.commitmentCount().call()
+            if total_count == 0:
+                return 0
+            
+            # Sondan başa doğru kontrol et (en son eklenen görevi bulmak için)
+            for i in range(total_count, 0, -1):
+                status = contract.functions.getCommitment(i).call()
+                # status: (user, amount, goal, completed, failed, refunded)
+                # completed (index 3) ve failed (index 4) false ise görev bekliyor demektir
+                if not status[3] and not status[4]:
+                    return i
+            return 0
+        except Exception as e:
+            logger.error(f"ID bulma hatasi: {e}")
+            return 0
 
     def on_modified(self, event):
         if event.is_directory:
@@ -270,29 +289,28 @@ class StudyFileHandler(FileSystemEventHandler):
 
         logger.info(f"Dosya degisikligi algilandi: {file_path}")
 
+        # Otomatik ID bul
+        commitment_id = self.get_latest_pending_id()
+        if commitment_id == 0:
+            logger.info("Aktif bekleyen görev bulunamadi.")
+            return
+
+        logger.info(f"Aktif gorev ID'si: {commitment_id}")
+
         is_success = validate_study_file(file_path)
 
         if is_success:
             if self.offline:
-                logger.info("[OFFLINE] completeTask cagirilirdi. TX gonderilmedi.")
+                logger.info(f"[OFFLINE] completeTask({commitment_id}) cagirilirdi.")
             else:
                 try:
-                    # On-chain durumunu kontrol et (Race condition önleme)
-                    contract = self.w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
-                    status = contract.functions.getCommitment(self.commitment_id).call()
-                    # status tuple: (user, amount, goal, completed, failed, refunded)
-                    # index 3: completed
-                    if status[3]:
-                        logger.info("Gorev zaten on-chain'de tamamlanmis. TX gonderilmedi.")
-                        return
-
-                    tx_hash = call_complete_task(self.w3, self.commitment_id)
+                    tx_hash = call_complete_task(self.w3, commitment_id)
                     logger.info(f"Hedef tamamlandi! TX: {tx_hash}")
                 except Exception as e:
                     logger.error(f"On-chain islem hatasi: {e}")
         else:
             if self.offline:
-                logger.info("[OFFLINE] failTask cagirilirdi. TX gonderilmedi.")
+                logger.info(f"[OFFLINE] failTask({commitment_id}) cagirilirdi.")
             logger.info("Hedef karsilanmadi. Bekleniyor...")
 
 
@@ -321,9 +339,7 @@ def main():
         with open(target_path, "w", encoding="utf-8") as f:
             f.write("Bugunku calisma notlarimi buraya yazacagim...\n")
 
-    commitment_id = 1
-
-    event_handler = StudyFileHandler(w3, commitment_id, offline=OFFLINE_MODE)
+    event_handler = StudyFileHandler(w3, offline=OFFLINE_MODE)
     observer = Observer()
     observer.schedule(event_handler, WATCH_DIR, recursive=False)
     observer.start()
