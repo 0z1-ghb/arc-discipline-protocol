@@ -1,29 +1,17 @@
-"""
-Discipline Protocol - AI Validator Agent
-
-Bu script, kullanıcının günlük çalışma dosyasını izler ve
-hedefe ulaşıldığında Arc Network üzerindeki akıllı kontratı
-tetikleyerek görevi tamamlar.
-
-Kullanim:
-    python agent/validator.py
-"""
-
 import os
 import time
 import json
 import logging
-from datetime import datetime
+import requests
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
 from web3 import Web3
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # ---------------------------------------------------------------------------
-# Ayarlar (.env'den okunur, yoksa varsayılan değerler kullanılır)
+# Ayarlar (.env'den okunur)
 # ---------------------------------------------------------------------------
 
 OFFLINE_MODE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
@@ -31,15 +19,10 @@ RPC_URL = os.getenv("RPC_URL", "https://rpc.arc.network")
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0xYourContractAddressHere")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
-# Izlenecek klasör yolu
-WATCH_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-
-# Dosya adi
-TARGET_FILE = "daily_study.txt"
-
-# Hedef kelime sayisi
-WORD_COUNT_THRESHOLD = int(os.getenv("WORD_COUNT_THRESHOLD", "100"))
+MIN_LINES = int(os.getenv("MIN_LINES", "10"))
+MAX_LINES = int(os.getenv("MAX_LINES", "30"))
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -48,136 +31,61 @@ WORD_COUNT_THRESHOLD = int(os.getenv("WORD_COUNT_THRESHOLD", "100"))
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.FileHandler("agent.log"),
-        logging.StreamHandler(),
-    ],
+    handlers=[logging.FileHandler("agent.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Kontrat ABI (DisciplineProtocol.sol derlendikten sonra buraya yapistirilacak)
+# ABI Yükleme
 # ---------------------------------------------------------------------------
 
-# Kontrat ABI (deploy veya mock_test sonrasi otomatik olusur)
 ABI_PATH = os.path.join(os.path.dirname(__file__), "contract_abi.json")
-
 if os.path.exists(ABI_PATH):
     with open(ABI_PATH, "r") as f:
         CONTRACT_ABI = json.load(f)
 else:
-    CONTRACT_ABI = [
-        {
-            "inputs": [{"internalType": "uint256", "name": "_commitmentId", "type": "uint256"}],
-            "name": "completeTask",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function",
-        },
-        {
-            "inputs": [{"internalType": "uint256", "name": "_commitmentId", "type": "uint256"}],
-            "name": "failTask",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function",
-        },
-        {
-            "inputs": [{"internalType": "uint256", "name": "_commitmentId", "type": "uint256"}],
-            "name": "getCommitment",
-            "outputs": [
-                {"internalType": "address", "name": "user", "type": "address"},
-                {"internalType": "uint256", "name": "amount", "type": "uint256"},
-                {"internalType": "string", "name": "goal", "type": "string"},
-                {"internalType": "bool", "name": "completed", "type": "bool"},
-                {"internalType": "bool", "name": "failed", "type": "bool"},
-                {"internalType": "bool", "name": "refunded", "type": "bool"},
-            ],
-            "stateMutability": "view",
-            "type": "function",
-        },
-    ]
+    CONTRACT_ABI = []
 
 # ---------------------------------------------------------------------------
-# Web3 baglantisi
+# Web3 Bağlantısı
 # ---------------------------------------------------------------------------
 
-
-def connect_web3() -> Web3:
-    """Arc Network RPC'ye baglanir ve Web3 instance dondurur."""
+def connect_web3():
     w3 = Web3(Web3.HTTPProvider(RPC_URL))
     if not w3.is_connected():
-        raise ConnectionError(f"RPC baglantisi kurulamadi: {RPC_URL}")
-    logger.info(f"RPC baglantisi kuruldu: {RPC_URL}")
+        raise ConnectionError(f"RPC bağlantısı kurulamadı: {RPC_URL}")
+    logger.info(f"RPC bağlandı: {RPC_URL}")
     return w3
 
-
 # ---------------------------------------------------------------------------
-# Dosya dogrulama
-# ---------------------------------------------------------------------------
-
-
-def validate_study_file(file_path: str) -> bool:
-    """
-    Dosyayi dogrular:
-    - Bugun guncellenmis olmali
-    - Kelime sayisi esik degerin uzerinde olmali
-
-    Returns:
-        bool: Dosya hedefi karsiliyorsa True
-    """
-    if not os.path.exists(file_path):
-        logger.warning(f"Dosya bulunamadi: {file_path}")
-        return False
-
-    # Son degisiklik tarihini kontrol et
-    mtime = os.path.getmtime(file_path)
-    modified_date = datetime.fromtimestamp(mtime).date()
-    today = datetime.now().date()
-
-    if modified_date != today:
-        logger.info(f"Dosya bugun guncellenmemis. Son degisiklik: {modified_date}")
-        return False
-
-    # Kelime sayisini hesapla
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read()
-        word_count = len(content.split())
-
-    logger.info(f"Kelime sayisi: {word_count} (esik: {WORD_COUNT_THRESHOLD})")
-
-    if word_count > WORD_COUNT_THRESHOLD:
-        logger.info("SUCCESS: Hedef karsilandi!")
-        return True
-
-    logger.info(f"FAIL: Kelime sayisi esik degerin altinda ({word_count}/{WORD_COUNT_THRESHOLD})")
-    return False
-
-
-# ---------------------------------------------------------------------------
-# On-chain islemler
+# Blockchain İşlemleri
 # ---------------------------------------------------------------------------
 
-
-def call_complete_task(w3: Web3, commitment_id: int) -> str:
-    """
-    Akıllı kontratta completeTask fonksiyonunu cagirir.
-
-    Args:
-        w3: Web3 instance
-        commitment_id: Tamamlanan taahhut ID'si
-
-    Returns:
-        str: Islem hash'i
-    """
+def get_latest_pending_id(w3) -> int:
+    """Blockchain'den en son bekleyen (pending) görev ID'sini bulur."""
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+    try:
+        total = contract.functions.commitmentCount().call()
+        if total == 0:
+            return 0
+        
+        # Sondan başa doğru kontrol et
+        for i in range(total, 0, -1):
+            status = contract.functions.getCommitment(i).call()
+            # status: user, amount, goal, githubUsername, completed, failed, refunded
+            # index 4: completed, index 5: failed
+            if not status[4] and not status[5]:
+                return i
+        return 0
+    except Exception as e:
+        logger.error(f"ID bulma hatası: {e}")
+        return 0
 
-    # Validator hesabini hazirla
+def call_complete_task(w3, commitment_id):
+    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
     account = w3.eth.account.from_key(PRIVATE_KEY)
-
-    # Nonce al
     nonce = w3.eth.get_transaction_count(account.address)
-
-    # Islemi olustur
+    
     tx = contract.functions.completeTask(commitment_id).build_transaction({
         "from": account.address,
         "nonce": nonce,
@@ -185,179 +93,129 @@ def call_complete_task(w3: Web3, commitment_id: int) -> str:
         "gasPrice": w3.eth.gas_price,
         "chainId": w3.eth.chain_id,
     })
-
-    # Islemi imzala ve gonder
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-
-    # Onay bekle
+    
+    signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-
+    
     if receipt.status == 1:
-        logger.info(f"completeTask basarili! TX: {receipt.transactionHash.hex()}")
+        logger.info(f"completeTask başarılı! TX: {receipt.transactionHash.hex()}")
     else:
-        logger.error(f"completeTask basarisiz! TX: {receipt.transactionHash.hex()}")
-
+        logger.error(f"completeTask başarısız! TX: {receipt.transactionHash.hex()}")
     return receipt.transactionHash.hex()
 
+# ---------------------------------------------------------------------------
+# GitHub Doğrulama
+# ---------------------------------------------------------------------------
 
-def call_fail_task(w3: Web3, commitment_id: int) -> str:
+def check_github_commit(username: str) -> bool:
     """
-    Akıllı kontratta failTask fonksiyonunu cagirir.
-
-    Args:
-        w3: Web3 instance
-        commitment_id: Basarisiz taahhut ID'si
-
-    Returns:
-        str: Islem hash'i
+    Kullanıcının bugün 10-30 satır arası değişiklik içeren bir commit atıp atmadığını kontrol eder.
     """
-    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+    if not GITHUB_TOKEN:
+        logger.warning("GITHUB_TOKEN ayarlanmamış. Kontrol atlanıyor.")
+        return False
 
-    account = w3.eth.account.from_key(PRIVATE_KEY)
-    nonce = w3.eth.get_transaction_count(account.address)
-
-    tx = contract.functions.failTask(commitment_id).build_transaction({
-        "from": account.address,
-        "nonce": nonce,
-        "gas": 300000,
-        "gasPrice": w3.eth.gas_price,
-        "chainId": w3.eth.chain_id,
-    })
-
-    signed_tx = w3.eth.account.sign_transaction(tx, private_key=PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
-
-    if receipt.status == 1:
-        logger.info(f"failTask basarili! TX: {receipt.transactionHash.hex()}")
-    else:
-        logger.error(f"failTask basarisiz! TX: {receipt.transactionHash.hex()}")
-
-    return receipt.transactionHash.hex()
-
-
-# ---------------------------------------------------------------------------
-# Dosya izleyici (Watchdog)
-# ---------------------------------------------------------------------------
-
-
-class StudyFileHandler(FileSystemEventHandler):
-    """daily_study.txt dosyasindaki degisiklikleri izler ve otomatik ID bulur."""
-
-    def __init__(self, w3, offline: bool = False):
-        self.w3 = w3
-        self.offline = offline
-        self.last_processed = 0
-        super().__init__()
-
-    def get_latest_pending_id(self) -> int:
-        """Blockchain'den en son bekleyen (pending) görev ID'sini bulur."""
-        contract = self.w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
-        try:
-            total_count = contract.functions.commitmentCount().call()
-            if total_count == 0:
-                return 0
-            
-            # Sondan başa doğru kontrol et (en son eklenen görevi bulmak için)
-            for i in range(total_count, 0, -1):
-                status = contract.functions.getCommitment(i).call()
-                # status: (user, amount, goal, completed, failed, refunded)
-                # completed (index 3) ve failed (index 4) false ise görev bekliyor demektir
-                if not status[3] and not status[4]:
-                    return i
-            return 0
-        except Exception as e:
-            logger.error(f"ID bulma hatasi: {e}")
-            return 0
-
-    def on_modified(self, event):
-        if event.is_directory:
-            return
-
-        file_path = os.path.abspath(event.src_path)
-        target_path = os.path.abspath(os.path.join(WATCH_DIR, TARGET_FILE))
-
-        if file_path != target_path:
-            return
-
-        now = time.time()
-        if now - self.last_processed < 1:
-            return
-        self.last_processed = now
-
-        logger.info(f"Dosya degisikligi algilandi: {file_path}")
-
-        # Otomatik ID bul
-        commitment_id = self.get_latest_pending_id()
-        if commitment_id == 0:
-            logger.info("Aktif bekleyen görev bulunamadi.")
-            return
-
-        logger.info(f"Aktif gorev ID'si: {commitment_id}")
-
-        is_success = validate_study_file(file_path)
-
-        if is_success:
-            if self.offline:
-                logger.info(f"[OFFLINE] completeTask({commitment_id}) cagirilirdi.")
-            else:
-                try:
-                    tx_hash = call_complete_task(self.w3, commitment_id)
-                    logger.info(f"Hedef tamamlandi! TX: {tx_hash}")
-                except Exception as e:
-                    logger.error(f"On-chain islem hatasi: {e}")
-        else:
-            if self.offline:
-                logger.info(f"[OFFLINE] failTask({commitment_id}) cagirilirdi.")
-            logger.info("Hedef karsilanmadi. Bekleniyor...")
-
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    url = f"https://api.github.com/users/{username}/events"
+    
+    try:
+        resp = requests.get(url, headers=headers)
+        if resp.status_code != 200:
+            logger.error(f"GitHub API hatası: {resp.status_code}")
+            return False
+        
+        events = resp.json()
+        for event in events:
+            if event['type'] == 'PushEvent':
+                created_at = event['created_at'][:10] # YYYY-MM-DD
+                
+                if created_at == today:
+                    commits = event['payload'].get('commits', [])
+                    for commit in commits:
+                        sha = commit['sha']
+                        repo_full_name = event['repo']['name'] # owner/repo
+                        
+                        try:
+                            owner, repo_name = repo_full_name.split('/')
+                            commit_url = f"https://api.github.com/repos/{owner}/{repo_name}/commits/{sha}"
+                            commit_resp = requests.get(commit_url, headers=headers)
+                            
+                            if commit_resp.status_code == 200:
+                                commit_data = commit_resp.json()
+                                stats = commit_data.get('stats', {})
+                                total_changes = stats.get('total', 0)
+                                
+                                if MIN_LINES <= total_changes <= MAX_LINES:
+                                    logger.info(f"Geçerli commit bulundu! SHA: {sha}, Satır: {total_changes}")
+                                    return True
+                                else:
+                                    logger.info(f"Commit bulundu ama satır sayısı ({total_changes}) aralık dışında [{MIN_LINES}-{MAX_LINES}]")
+                        except Exception as e:
+                            logger.warning(f"Commit detayları alınamadı: {e}")
+                            continue
+        return False
+    except Exception as e:
+        logger.error(f"GitHub kontrol hatası: {e}")
+        return False
 
 # ---------------------------------------------------------------------------
-# Ana calistirma
+# Ana Döngü
 # ---------------------------------------------------------------------------
-
 
 def main():
-    """AI ajanini baslatir ve dosyayi izlemeye baslar."""
     logger.info("=" * 60)
-    logger.info("Discipline Protocol - AI Validator Agent baslatiliyor")
+    logger.info("Discipline Protocol - GitHub Validator Agent")
     if OFFLINE_MODE:
-        logger.info("MOD: OFFLINE (RPC baglantisi yapilmayacak)")
+        logger.info("MOD: OFFLINE (Sadece simülasyon)")
     logger.info("=" * 60)
-
+    
     w3 = None
     if not OFFLINE_MODE:
         w3 = connect_web3()
-
-    target_path = os.path.join(WATCH_DIR, TARGET_FILE)
-    os.makedirs(WATCH_DIR, exist_ok=True)
-
-    if not os.path.exists(target_path):
-        logger.info(f"Ornek dosya olusturuluyor: {target_path}")
-        with open(target_path, "w", encoding="utf-8") as f:
-            f.write("Bugunku calisma notlarimi buraya yazacagim...\n")
-
-    event_handler = StudyFileHandler(w3, offline=OFFLINE_MODE)
-    observer = Observer()
-    observer.schedule(event_handler, WATCH_DIR, recursive=False)
-    observer.start()
-
-    logger.info(f"Dosya izleniyor: {WATCH_DIR}")
-    logger.info(f"Hedef: {WORD_COUNT_THRESHOLD}+ kelime, bugun guncellenmis")
-    logger.info("Agent calisiyor. Durdurmak icin Ctrl+C basin.")
-
-    try:
-        while True:
-            time.sleep(5)
-    except KeyboardInterrupt:
-        logger.info("Agent durduruluyor...")
-        observer.stop()
-
-    observer.join()
-    logger.info("Agent kapatildi.")
-
+    
+    logger.info(f"Kontrol periyodu: 60 saniye. Min Satır: {MIN_LINES}, Max Satır: {MAX_LINES}")
+    
+    while True:
+        try:
+            if w3:
+                commitment_id = get_latest_pending_id(w3)
+                
+                if commitment_id > 0:
+                    logger.info(f"Bekleyen görev bulundu: ID {commitment_id}")
+                    
+                    # GitHub kullanıcı adını al
+                    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+                    status = contract.functions.getCommitment(commitment_id).call()
+                    username = status[3] # githubUsername
+                    
+                    logger.info(f"GitHub aktivitesi kontrol ediliyor: {username}")
+                    
+                    if check_github_commit(username):
+                        if OFFLINE_MODE:
+                            logger.info("[OFFLINE] completeTask çağrılırdı.")
+                        else:
+                            call_complete_task(w3, commitment_id)
+                    else:
+                        logger.info("Bugün için geçerli commit bulunamadı.")
+                else:
+                    logger.info("Bekleyen görev yok.")
+            else:
+                logger.info("Offline mod: Blockchain kontrolü yapılmıyor.")
+            
+            time.sleep(60) # Her dakika kontrol et
+            
+        except KeyboardInterrupt:
+            logger.info("Agent durduruluyor...")
+            break
+        except Exception as e:
+            logger.error(f"Döngü hatası: {e}")
+            time.sleep(60)
 
 if __name__ == "__main__":
     main()

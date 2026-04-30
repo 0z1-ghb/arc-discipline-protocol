@@ -29,8 +29,9 @@ async function main() {
   await usdc.connect(user).faucet(1000 * 10 ** 6);
   
   console.log("\n[5] User 100 USDC deposit yapiyor (Commitment #1)...");
+  // Yeni deposit fonksiyonu githubUsername parametresi aliyor
   await usdc.connect(user).approve(protocolAddress, 100 * 10 ** 6);
-  await protocol.connect(user).deposit(100 * 10 ** 6, "Gunde 100 sayfa calisma");
+  await protocol.connect(user).deposit(100 * 10 ** 6, "Gunde 100 sayfa calisma", "test-user");
   
   // Başlangıç skoru kontrolü
   let scoreData = await protocol.getScore(user.address);
@@ -49,7 +50,7 @@ async function main() {
 
   console.log("\n[7] TEST: Yeni deposit ve failTask (Basarisizlik)...");
   await usdc.connect(user).approve(protocolAddress, 200 * 10 ** 6);
-  await protocol.connect(user).deposit(200 * 10 ** 6, "Her gun 50 Ingilizce kelime");
+  await protocol.connect(user).deposit(200 * 10 ** 6, "Her gun 50 Ingilizce kelime", "test-user");
   
   // Fail öncesi skor
   scoreData = await protocol.getScore(user.address);

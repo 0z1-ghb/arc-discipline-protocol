@@ -11,18 +11,17 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     address public validator;
     address public penaltyAddress;
 
-    // Scoring System Constants
     uint256 public constant MAX_SCORE = 1000;
     uint256 public constant SUCCESS_POINTS = 10;
     uint256 public constant FAILURE_PENALTY = 20;
 
-    // Mapping user address to their discipline score
     mapping(address => uint256) public disciplineScores;
 
     struct Commitment {
         address user;
         uint256 amount;
         string goal;
+        string githubUsername;
         bool completed;
         bool failed;
         bool refunded;
@@ -31,7 +30,7 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     mapping(uint256 => Commitment) public commitments;
     uint256 public commitmentCount;
 
-    event Deposited(uint256 commitmentId, address user, uint256 amount, string goal);
+    event Deposited(uint256 commitmentId, address user, uint256 amount, string goal, string githubUsername);
     event TaskCompleted(uint256 commitmentId, address user, uint256 newScore);
     event TaskFailed(uint256 commitmentId, address user, uint256 penaltyAmount, uint256 newScore);
     event ValidatorUpdated(address oldValidator, address newValidator);
@@ -51,9 +50,10 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         _;
     }
 
-    function deposit(uint256 _amount, string calldata _goal) external nonReentrant {
+    function deposit(uint256 _amount, string calldata _goal, string calldata _githubUsername) external nonReentrant {
         require(_amount > 0, "Amount must be greater than 0");
         require(bytes(_goal).length > 0, "Goal cannot be empty");
+        require(bytes(_githubUsername).length > 0, "GitHub username cannot be empty");
 
         require(usdc.transferFrom(msg.sender, address(this), _amount), "USDC transfer failed");
 
@@ -62,12 +62,13 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
             user: msg.sender,
             amount: _amount,
             goal: _goal,
+            githubUsername: _githubUsername,
             completed: false,
             failed: false,
             refunded: false
         });
 
-        emit Deposited(commitmentCount, msg.sender, _amount, _goal);
+        emit Deposited(commitmentCount, msg.sender, _amount, _goal, _githubUsername);
     }
 
     function completeTask(uint256 _commitmentId) external onlyValidator {
@@ -76,16 +77,11 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(!c.completed && !c.failed, "Already resolved");
 
         c.completed = true;
-        
-        // Refund user
         require(usdc.transfer(c.user, c.amount), "Refund failed");
 
-        // Update Score: Add points, cap at MAX_SCORE
         uint256 currentScore = disciplineScores[c.user];
         uint256 newScore = currentScore + SUCCESS_POINTS;
-        if (newScore > MAX_SCORE) {
-            newScore = MAX_SCORE;
-        }
+        if (newScore > MAX_SCORE) newScore = MAX_SCORE;
         disciplineScores[c.user] = newScore;
 
         emit TaskCompleted(_commitmentId, c.user, newScore);
@@ -97,18 +93,11 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(!c.completed && !c.failed, "Already resolved");
 
         c.failed = true;
-        
-        // Send penalty
         require(usdc.transfer(penaltyAddress, c.amount), "Penalty transfer failed");
 
-        // Update Score: Subtract penalty, floor at 0
         uint256 currentScore = disciplineScores[c.user];
         uint256 newScore = 0;
-        if (currentScore >= FAILURE_PENALTY) {
-            newScore = currentScore - FAILURE_PENALTY;
-        } else {
-            newScore = 0;
-        }
+        if (currentScore >= FAILURE_PENALTY) newScore = currentScore - FAILURE_PENALTY;
         disciplineScores[c.user] = newScore;
 
         emit TaskFailed(_commitmentId, c.user, c.amount, newScore);
@@ -138,11 +127,12 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         address user,
         uint256 amount,
         string memory goal,
+        string memory githubUsername,
         bool completed,
         bool failed,
         bool refunded
     ) {
         Commitment storage c = commitments[_commitmentId];
-        return (c.user, c.amount, c.goal, c.completed, c.failed, c.refunded);
+        return (c.user, c.amount, c.goal, c.githubUsername, c.completed, c.failed, c.refunded);
     }
 }

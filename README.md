@@ -4,18 +4,18 @@ On-chain discipline tracker built on **Arc Network**. Lock USDC, AI validates yo
 
 ## Concept
 
-Users lock USDC into a smart contract for a personal goal (e.g., "Study 100 pages/day"). An AI agent monitors progress via file uploads, test results, or GitHub commits. If the goal is met, funds are refunded and the user earns a **Discipline Score** on-chain — usable as a trust signal in agentic marketplaces.
+Users lock USDC into a smart contract for a personal goal. An AI agent monitors progress via **GitHub commits**. If the goal is met (quality commit detected), funds are refunded and the user earns a **Discipline Score** on-chain.
 
 ## Architecture
 
 ```
-User → deposits USDC → Smart Contract → AI Validator → completeTask / failTask
+User → deposits USDC + GitHub Username → Smart Contract → AI Validator (GitHub API) → completeTask / failTask
 ```
 
 | Component | Tech |
 |-----------|------|
 | Smart Contract | Solidity + OpenZeppelin |
-| AI Validator | Python + web3.py + watchdog |
+| AI Validator | Python + web3.py + GitHub API |
 | Network | Arc Network (EVM-compatible) |
 
 ## Quick Start
@@ -27,7 +27,7 @@ pip install -r requirements.txt
 
 # Setup environment
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your values (RPC, Private Key, GitHub Token)
 
 # Run mock tests
 npx hardhat run scripts/mock_test.js
@@ -50,7 +50,9 @@ Copy `.env.example` to `.env` and fill in your values:
 | `CONTRACT_ADDRESS` | Deployed contract address |
 | `PRIVATE_KEY` | Validator wallet private key |
 | `PENALTY_ADDRESS` | Address that receives failed stakes |
-| `WORD_COUNT_THRESHOLD` | Minimum word count to pass validation (default: 100) |
+| `GITHUB_TOKEN` | GitHub Personal Access Token (Classic) for API access |
+| `MIN_LINES` | Minimum lines changed to count as valid commit (default: 10) |
+| `MAX_LINES` | Maximum lines changed to count as valid commit (default: 30) |
 
 > **Never commit `.env` to git.** It is ignored by `.gitignore`.
 
@@ -61,7 +63,7 @@ Copy `.env.example` to `.env` and fill in your values:
 │   ├── DisciplineProtocol.sol   # Main contract
 │   └── MockUSDC.sol             # Test ERC20
 ├── agent/
-│   ├── validator.py             # AI file watcher
+│   ├── validator.py             # AI GitHub validator
 │   └── contract_abi.json        # Auto-generated ABI
 ├── scripts/
 │   ├── deploy.js                # Deployment script
