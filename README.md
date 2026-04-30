@@ -4,7 +4,7 @@ On-chain discipline tracker built on **Arc Network**. Lock USDC, AI validates yo
 
 ## Concept
 
-Users lock USDC into a smart contract for a personal goal (e.g., "Study 100 pages/day"). An AI agent monitors progress via file uploads, test results, or GitHub commits. If the goal is met, funds are refunded and the user earns a **Discipline Score** on-chain — usable as a trust signal in agentic marketplaces.
+Users lock USDC into a smart contract for a personal goal (e.g., "Study 100 pages/day"). An AI agent monitors progress via file uploads, test results, or GitHub commits. If the goal is met, funds are refunded and the user earns a **Discipline Score** on-chain  usable as a trust signal in agentic marketplaces.
 
 ## Architecture
 
