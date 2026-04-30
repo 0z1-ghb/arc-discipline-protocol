@@ -11,6 +11,14 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     address public validator;
     address public penaltyAddress;
 
+    // Scoring System Constants
+    uint256 public constant MAX_SCORE = 1000;
+    uint256 public constant SUCCESS_POINTS = 10;
+    uint256 public constant FAILURE_PENALTY = 20;
+
+    // Mapping user address to their discipline score
+    mapping(address => uint256) public disciplineScores;
+
     struct Commitment {
         address user;
         uint256 amount;
@@ -24,8 +32,8 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     uint256 public commitmentCount;
 
     event Deposited(uint256 commitmentId, address user, uint256 amount, string goal);
-    event TaskCompleted(uint256 commitmentId, address user);
-    event TaskFailed(uint256 commitmentId, address user, uint256 penaltyAmount);
+    event TaskCompleted(uint256 commitmentId, address user, uint256 newScore);
+    event TaskFailed(uint256 commitmentId, address user, uint256 penaltyAmount, uint256 newScore);
     event ValidatorUpdated(address oldValidator, address newValidator);
     event PenaltyAddressUpdated(address oldPenalty, address newPenalty);
 
@@ -68,9 +76,19 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(!c.completed && !c.failed, "Already resolved");
 
         c.completed = true;
+        
+        // Refund user
         require(usdc.transfer(c.user, c.amount), "Refund failed");
 
-        emit TaskCompleted(_commitmentId, c.user);
+        // Update Score: Add points, cap at MAX_SCORE
+        uint256 currentScore = disciplineScores[c.user];
+        uint256 newScore = currentScore + SUCCESS_POINTS;
+        if (newScore > MAX_SCORE) {
+            newScore = MAX_SCORE;
+        }
+        disciplineScores[c.user] = newScore;
+
+        emit TaskCompleted(_commitmentId, c.user, newScore);
     }
 
     function failTask(uint256 _commitmentId) external onlyValidator {
@@ -79,9 +97,29 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(!c.completed && !c.failed, "Already resolved");
 
         c.failed = true;
+        
+        // Send penalty
         require(usdc.transfer(penaltyAddress, c.amount), "Penalty transfer failed");
 
-        emit TaskFailed(_commitmentId, c.user, c.amount);
+        // Update Score: Subtract penalty, floor at 0
+        uint256 currentScore = disciplineScores[c.user];
+        uint256 newScore = 0;
+        if (currentScore >= FAILURE_PENALTY) {
+            newScore = currentScore - FAILURE_PENALTY;
+        } else {
+            newScore = 0;
+        }
+        disciplineScores[c.user] = newScore;
+
+        emit TaskFailed(_commitmentId, c.user, c.amount, newScore);
+    }
+
+    function getScore(address _user) external view returns (uint256 score, string memory level) {
+        score = disciplineScores[_user];
+        if (score >= 1000) level = "Legend";
+        else if (score >= 500) level = "Elite";
+        else if (score >= 100) level = "Disciplined";
+        else level = "Novice";
     }
 
     function setValidator(address _newValidator) external onlyOwner {

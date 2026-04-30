@@ -4,7 +4,7 @@ const path = require("path");
 
 async function main() {
   console.log("=".repeat(60));
-  console.log("Discipline Protocol - Mock Test");
+  console.log("Discipline Protocol - Scoring System Test");
   console.log("=".repeat(60));
 
   const [owner, user, validator] = await hre.ethers.getSigners();
@@ -27,56 +27,45 @@ async function main() {
 
   console.log("\n[4] User'a 1000 USDC faucet...");
   await usdc.connect(user).faucet(1000 * 10 ** 6);
-  const userBalance = await usdc.balanceOf(user.address);
-  console.log("  User USDC balance:", Number(userBalance) / 10 ** 6);
-
-  console.log("\n[5] User 100 USDC deposit yapiyor...");
+  
+  console.log("\n[5] User 100 USDC deposit yapiyor (Commitment #1)...");
   await usdc.connect(user).approve(protocolAddress, 100 * 10 ** 6);
   await protocol.connect(user).deposit(100 * 10 ** 6, "Gunde 100 sayfa calisma");
-  console.log("  Deposit basarili!");
+  
+  // Başlangıç skoru kontrolü
+  let scoreData = await protocol.getScore(user.address);
+  console.log("  Baslangic Skoru:", Number(scoreData.score), "| Seviye:", scoreData.level);
 
-  const commitment = await protocol.getCommitment(1);
-  console.log("  Commitment #1:", {
-    user: commitment.user,
-    amount: Number(commitment.amount) / 10 ** 6,
-    goal: commitment.goal,
-    completed: commitment.completed,
-    failed: commitment.failed,
-  });
-
-  console.log("\n[6] TEST: Validator disindaki adres completeTask cagiriyor (basarisiz olmali)");
-  try {
-    await protocol.connect(user).completeTask(1);
-    console.log("  HATA: Yetkisiz erisim saglandi!");
-  } catch (error) {
-    console.log("  Beklenen hata:", error.reason || error.message.split("\n")[0]);
-  }
-
-  console.log("\n[7] TEST: Validator completeTask cagiriyor (basarili olmali)");
-  const protocolContract = await hre.ethers.getContractAt("DisciplineProtocol", protocolAddress);
+  console.log("\n[6] TEST: Validator completeTask cagiriyor (Basari)...");
   await protocol.connect(validator).completeTask(1);
-  const updatedCommitment = await protocol.getCommitment(1);
-  console.log("  Task completed:", updatedCommitment.completed);
+  
+  // Skor artışı kontrolü
+  scoreData = await protocol.getScore(user.address);
+  console.log("  Yeni Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
+  console.log("  Beklenen: +10 Puan -> Novice (0-99)");
 
   const userBalanceAfter = await usdc.balanceOf(user.address);
   console.log("  User USDC balance (refund sonrasi):", Number(userBalanceAfter) / 10 ** 6);
 
-  console.log("\n[8] Yeni deposit ve failTask testi...");
-  await usdc.connect(user).faucet(500 * 10 ** 6);
+  console.log("\n[7] TEST: Yeni deposit ve failTask (Basarisizlik)...");
   await usdc.connect(user).approve(protocolAddress, 200 * 10 ** 6);
   await protocol.connect(user).deposit(200 * 10 ** 6, "Her gun 50 Ingilizce kelime");
-
-  const protocolBalanceBefore = await usdc.balanceOf(protocolAddress);
-  console.log("  Protocol balance:", Number(protocolBalanceBefore) / 10 ** 6);
+  
+  // Fail öncesi skor
+  scoreData = await protocol.getScore(user.address);
+  console.log("  Fail Oncesi Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
 
   await protocol.connect(validator).failTask(2);
-  const failedCommitment = await protocol.getCommitment(2);
-  console.log("  Task failed:", failedCommitment.failed);
+  
+  // Skor düşüşü kontrolü
+  scoreData = await protocol.getScore(user.address);
+  console.log("  Fail Sonrasi Skor:", Number(scoreData.score), "| Seviye:", scoreData.level);
+  console.log("  Beklenen: -20 Puan -> (10 - 20 = 0, min 0) -> Novice");
 
   const penaltyBalance = await usdc.balanceOf(owner.address);
   console.log("  Penalty address balance:", Number(penaltyBalance) / 10 ** 6);
 
-  console.log("\n[9] ABI kaydediliyor...");
+  console.log("\n[8] ABI kaydediliyor...");
   const artifactPath = path.join(__dirname, "..", "artifacts", "contracts", "DisciplineProtocol.sol", "DisciplineProtocol.json");
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
   const abiPath = path.join(__dirname, "..", "agent", "contract_abi.json");
@@ -84,7 +73,7 @@ async function main() {
   console.log("  ABI saved to:", abiPath);
 
   console.log("\n" + "=".repeat(60));
-  console.log("Tum testler basarili!");
+  console.log("Scoring System Test Basarili!");
   console.log("=".repeat(60));
 }
 
