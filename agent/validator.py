@@ -277,6 +277,15 @@ class StudyFileHandler(FileSystemEventHandler):
                 logger.info("[OFFLINE] completeTask cagirilirdi. TX gonderilmedi.")
             else:
                 try:
+                    # On-chain durumunu kontrol et (Race condition önleme)
+                    contract = self.w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+                    status = contract.functions.getCommitment(self.commitment_id).call()
+                    # status tuple: (user, amount, goal, completed, failed, refunded)
+                    # index 3: completed
+                    if status[3]:
+                        logger.info("Gorev zaten on-chain'de tamamlanmis. TX gonderilmedi.")
+                        return
+
                     tx_hash = call_complete_task(self.w3, self.commitment_id)
                     logger.info(f"Hedef tamamlandi! TX: {tx_hash}")
                 except Exception as e:
