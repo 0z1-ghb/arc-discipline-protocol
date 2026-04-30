@@ -23,6 +23,9 @@ from web3 import Web3
 # Ayarlar
 # ---------------------------------------------------------------------------
 
+# Offline mod: True ise RPC baglantisi yapmadan sadece dosya dogrulama yapar
+OFFLINE_MODE = True
+
 # Arc Network RPC endpoint (testnet veya mainnet)
 RPC_URL = "https://rpc.arc.network"
 
@@ -249,9 +252,10 @@ def call_fail_task(w3: Web3, commitment_id: int) -> str:
 class StudyFileHandler(FileSystemEventHandler):
     """daily_study.txt dosyasindaki degisiklikleri izler."""
 
-    def __init__(self, w3: Web3, commitment_id: int):
+    def __init__(self, w3, commitment_id: int, offline: bool = False):
         self.w3 = w3
         self.commitment_id = commitment_id
+        self.offline = offline
         self.last_processed = 0
         super().__init__()
 
@@ -265,7 +269,6 @@ class StudyFileHandler(FileSystemEventHandler):
         if file_path != target_path:
             return
 
-        # Ayni dosya icin tekrar tekrar islem yapma (1 saniye threshold)
         now = time.time()
         if now - self.last_processed < 1:
             return
@@ -273,16 +276,20 @@ class StudyFileHandler(FileSystemEventHandler):
 
         logger.info(f"Dosya degisikligi algilandi: {file_path}")
 
-        # Dogrulama yap
         is_success = validate_study_file(file_path)
 
         if is_success:
-            try:
-                tx_hash = call_complete_task(self.w3, self.commitment_id)
-                logger.info(f"Hedef tamamlandi! TX: {tx_hash}")
-            except Exception as e:
-                logger.error(f"On-chain islem hatasi: {e}")
+            if self.offline:
+                logger.info("[OFFLINE] completeTask cagirilirdi. TX gonderilmedi.")
+            else:
+                try:
+                    tx_hash = call_complete_task(self.w3, self.commitment_id)
+                    logger.info(f"Hedef tamamlandi! TX: {tx_hash}")
+                except Exception as e:
+                    logger.error(f"On-chain islem hatasi: {e}")
         else:
+            if self.offline:
+                logger.info("[OFFLINE] failTask cagirilirdi. TX gonderilmedi.")
             logger.info("Hedef karsilanmadi. Bekleniyor...")
 
 
@@ -295,28 +302,25 @@ def main():
     """AI ajanini baslatir ve dosyayi izlemeye baslar."""
     logger.info("=" * 60)
     logger.info("Discipline Protocol - AI Validator Agent baslatiliyor")
+    if OFFLINE_MODE:
+        logger.info("MOD: OFFLINE (RPC baglantisi yapilmayacak)")
     logger.info("=" * 60)
 
-    # Web3 baglantisi
-    w3 = connect_web3()
+    w3 = None
+    if not OFFLINE_MODE:
+        w3 = connect_web3()
 
-    # Izlenecek dosya yolu
     target_path = os.path.join(WATCH_DIR, TARGET_FILE)
-
-    # Klasor yoksa olustur
     os.makedirs(WATCH_DIR, exist_ok=True)
 
-    # Ornek dosya yoksa olustur
     if not os.path.exists(target_path):
         logger.info(f"Ornek dosya olusturuluyor: {target_path}")
         with open(target_path, "w", encoding="utf-8") as f:
             f.write("Bugunku calisma notlarimi buraya yazacagim...\n")
 
-    # Commitment ID (gercekte on-chain'den alinabilir)
     commitment_id = 1
 
-    # Dosya izleyiciyi baslat
-    event_handler = StudyFileHandler(w3, commitment_id)
+    event_handler = StudyFileHandler(w3, commitment_id, offline=OFFLINE_MODE)
     observer = Observer()
     observer.schedule(event_handler, WATCH_DIR, recursive=False)
     observer.start()
