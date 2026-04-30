@@ -11,7 +11,7 @@ from web3 import Web3
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 # ---------------------------------------------------------------------------
-# Configuration (Loaded from .env)
+# Configuration
 # ---------------------------------------------------------------------------
 
 OFFLINE_MODE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
@@ -21,8 +21,13 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
-MIN_LINES = int(os.getenv("MIN_LINES", "10"))
+# Quality Filter Thresholds
+MIN_LINES = int(os.getenv("MIN_LINES", "5"))
 MAX_LINES = int(os.getenv("MAX_LINES", "30"))
+
+# Rule-Based Quality Filter Constants
+VALID_EXTENSIONS = {'.py', '.js', '.ts', '.jsx', '.tsx', '.sol', '.rs', '.go', '.java', '.cpp', '.c', '.h', '.html', '.css', '.scss'}
+CODE_KEYWORDS = {'function', 'def', 'class', 'import', 'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'struct', 'fn', 'pub', 'use', 'async', 'await', 'export'}
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -69,11 +74,8 @@ def get_latest_pending_id(w3) -> int:
         if total == 0:
             return 0
         
-        # Check from latest to oldest
         for i in range(total, 0, -1):
             status = contract.functions.getCommitment(i).call()
-            # status: user, amount, goal, githubUsername, completed, failed, refunded
-            # index 4: completed, index 5: failed
             if not status[4] and not status[5]:
                 return i
         return 0
@@ -105,12 +107,34 @@ def call_complete_task(w3, commitment_id):
     return receipt.transactionHash.hex()
 
 # ---------------------------------------------------------------------------
-# GitHub Validation
+# GitHub Validation & Quality Filter
 # ---------------------------------------------------------------------------
+
+def is_valid_code_change(files):
+    """
+    Rule-based quality check:
+    1. Must be a code file (valid extension).
+    2. Must contain programming keywords (not just random text).
+    """
+    for f in files:
+        filename = f.get('filename', '')
+        patch = f.get('patch', '')
+        
+        # 1. Extension Check
+        _, ext = os.path.splitext(filename)
+        if ext.lower() not in VALID_EXTENSIONS:
+            continue
+            
+        # 2. Keyword Check
+        patch_lower = patch.lower()
+        if any(kw in patch_lower for kw in CODE_KEYWORDS):
+            return True
+            
+    return False
 
 def check_github_commit(username: str) -> bool:
     """
-    Checks if the user has pushed a commit today with 10-30 lines of changes.
+    Checks if the user has pushed a valid code commit today.
     """
     if not GITHUB_TOKEN:
         logger.warning("GITHUB_TOKEN not set. Skipping check.")
@@ -133,19 +157,18 @@ def check_github_commit(username: str) -> bool:
         events = resp.json()
         for event in events:
             if event['type'] == 'PushEvent':
-                created_at = event['created_at'][:10] # YYYY-MM-DD
+                created_at = event['created_at'][:10]
                 
                 if created_at == today:
                     commits = event['payload'].get('commits', [])
                     
-                    # GitHub API sometimes omits the commits list in payload, providing only 'head' SHA.
                     if not commits and 'head' in event['payload']:
                         logger.info("No commit list in payload, using 'head' SHA.")
                         commits = [{'sha': event['payload']['head']}]
                     
                     for commit in commits:
                         sha = commit['sha']
-                        repo_full_name = event['repo']['name'] # owner/repo
+                        repo_full_name = event['repo']['name']
                         
                         try:
                             owner, repo_name = repo_full_name.split('/')
@@ -157,11 +180,19 @@ def check_github_commit(username: str) -> bool:
                                 stats = commit_data.get('stats', {})
                                 total_changes = stats.get('total', 0)
                                 
-                                if MIN_LINES <= total_changes <= MAX_LINES:
-                                    logger.info(f"Valid commit found! SHA: {sha}, Lines: {total_changes}")
-                                    return True
-                                else:
-                                    logger.info(f"Commit found but line count ({total_changes}) is out of range [{MIN_LINES}-{MAX_LINES}]")
+                                # Check Line Count
+                                if not (MIN_LINES <= total_changes <= MAX_LINES):
+                                    logger.info(f"Commit {sha} line count ({total_changes}) out of range [{MIN_LINES}-{MAX_LINES}]")
+                                    continue
+                                
+                                # Check Code Quality (Extension + Keywords)
+                                files = commit_data.get('files', [])
+                                if not is_valid_code_change(files):
+                                    logger.info(f"Commit {sha} rejected: No valid code changes found (spam filter).")
+                                    continue
+
+                                logger.info(f"Valid code commit found! SHA: {sha}, Lines: {total_changes}")
+                                return True
                         except Exception as e:
                             logger.warning(f"Could not fetch commit details: {e}")
                             continue
@@ -186,6 +217,7 @@ def main():
         w3 = connect_web3()
     
     logger.info(f"Check interval: 60s. Min Lines: {MIN_LINES}, Max Lines: {MAX_LINES}")
+    logger.info(f"Quality Filter: Active (Extensions + Keywords)")
     
     while True:
         try:
@@ -195,10 +227,9 @@ def main():
                 if commitment_id > 0:
                     logger.info(f"Pending task found: ID {commitment_id}")
                     
-                    # Get GitHub username from contract
                     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
                     status = contract.functions.getCommitment(commitment_id).call()
-                    username = status[3] # githubUsername
+                    username = status[3]
                     
                     logger.info(f"Checking GitHub activity for: {username}")
                     
@@ -208,13 +239,13 @@ def main():
                         else:
                             call_complete_task(w3, commitment_id)
                     else:
-                        logger.info("No valid commit found for today.")
+                        logger.info("No valid code commit found for today.")
                 else:
                     logger.info("No pending tasks.")
             else:
                 logger.info("Offline mode: Blockchain check skipped.")
             
-            time.sleep(60) # Check every minute
+            time.sleep(60)
             
         except KeyboardInterrupt:
             logger.info("Agent stopping...")
