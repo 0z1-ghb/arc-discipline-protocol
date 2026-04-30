@@ -137,6 +137,12 @@ def check_github_commit(username: str) -> bool:
                 
                 if created_at == today:
                     commits = event['payload'].get('commits', [])
+                    
+                    # GitHub API bazen commits listesini payload'da vermez, sadece 'head' SHA'sini verir.
+                    if not commits and 'head' in event['payload']:
+                        logger.info("Payload'da commit listesi yok, 'head' SHA kullaniliyor.")
+                        commits = [{'sha': event['payload']['head']}]
+                    
                     for commit in commits:
                         sha = commit['sha']
                         repo_full_name = event['repo']['name'] # owner/repo
