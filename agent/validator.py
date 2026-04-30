@@ -39,7 +39,7 @@ WATCH_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 TARGET_FILE = "daily_study.txt"
 
 # Hedef kelime sayisi
-WORD_COUNT_THRESHOLD = 100
+WORD_COUNT_THRESHOLD = int(os.getenv("WORD_COUNT_THRESHOLD", "100"))
 
 # ---------------------------------------------------------------------------
 # Logging

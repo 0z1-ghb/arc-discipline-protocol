@@ -50,6 +50,7 @@ Copy `.env.example` to `.env` and fill in your values:
 | `CONTRACT_ADDRESS` | Deployed contract address |
 | `PRIVATE_KEY` | Validator wallet private key |
 | `PENALTY_ADDRESS` | Address that receives failed stakes |
+| `WORD_COUNT_THRESHOLD` | Minimum word count to pass validation (default: 100) |
 
 > **Never commit `.env` to git.** It is ignored by `.gitignore`.
 
