@@ -22,8 +22,7 @@ PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
 # Quality Filter Thresholds
-MIN_LINES = int(os.getenv("MIN_LINES", "5"))
-MAX_LINES = int(os.getenv("MAX_LINES", "30"))
+MIN_LINES = int(os.getenv("MIN_LINES", "3"))
 
 # Rule-Based Quality Filter Constants
 VALID_EXTENSIONS = {'.py', '.js', '.ts', '.jsx', '.tsx', '.sol', '.rs', '.go', '.java', '.cpp', '.c', '.h', '.html', '.css', '.scss'}
@@ -180,9 +179,9 @@ def check_github_commit(username: str) -> bool:
                                 stats = commit_data.get('stats', {})
                                 total_changes = stats.get('total', 0)
                                 
-                                # Check Line Count
-                                if not (MIN_LINES <= total_changes <= MAX_LINES):
-                                    logger.info(f"Commit {sha} line count ({total_changes}) out of range [{MIN_LINES}-{MAX_LINES}]")
+                                # Check Line Count (Minimum only)
+                                if total_changes < MIN_LINES:
+                                    logger.info(f"Commit {sha} line count ({total_changes}) below minimum ({MIN_LINES})")
                                     continue
                                 
                                 # Check Code Quality (Extension + Keywords)
@@ -216,7 +215,7 @@ def main():
     if not OFFLINE_MODE:
         w3 = connect_web3()
     
-    logger.info(f"Check interval: 60s. Min Lines: {MIN_LINES}, Max Lines: {MAX_LINES}")
+    logger.info(f"Check interval: 60s. Min Lines: {MIN_LINES}")
     logger.info(f"Quality Filter: Active (Extensions + Keywords)")
     
     while True:
