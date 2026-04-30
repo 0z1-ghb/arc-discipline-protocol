@@ -9,7 +9,6 @@ module.exports = {
       url: "https://rpc.testnet.arc.network",
       chainId: 5042002,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 1000000000,
     },
   },
 };
