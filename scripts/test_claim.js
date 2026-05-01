@@ -34,9 +34,12 @@ async function main() {
       const amount = ethers.parseUnits("0.1", 6); // 0.1 USDC
       
       // Approve
-      await usdc.connect(signer).approve(protocolAddress, amount);
+      console.log(`Approving ${ethers.formatUnits(amount, 6)} USDC...`);
+      const approveTx = await usdc.connect(signer).approve(protocolAddress, amount);
+      await approveTx.wait();
       
       // Deposit
+      console.log(`Depositing for task boost...`);
       const tx = await protocol.connect(signer).deposit(amount, "Boost task", "0z1-ghb");
       const receipt = await tx.wait();
       
