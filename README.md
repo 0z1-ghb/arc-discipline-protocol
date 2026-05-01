@@ -6,6 +6,13 @@ On-chain discipline tracker built on **Arc Network**. Lock USDC, AI validates yo
 
 Users lock USDC into a smart contract for a personal goal. An AI agent monitors progress via **GitHub commits**. If the goal is met (quality commit detected), funds are refunded and the user earns a **Discipline Score** on-chain.
 
+## Quality Filter (Anti-Spam)
+
+The agent uses a rule-based filter to ensure only real code contributions are rewarded:
+- **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted. Text/Image files are ignored.
+- **Keywords:** Commits must contain programming keywords (`function`, `import`, `def`, `class`, etc.).
+- **Minimum Lines:** At least **3 lines** of changes are required.
+
 ## Architecture
 
 ```
@@ -51,8 +58,7 @@ Copy `.env.example` to `.env` and fill in your values:
 | `PRIVATE_KEY` | Validator wallet private key |
 | `PENALTY_ADDRESS` | Address that receives failed stakes |
 | `GITHUB_TOKEN` | GitHub Personal Access Token (Classic) for API access |
-| `MIN_LINES` | Minimum lines changed to count as valid commit (default: 10) |
-| `MAX_LINES` | Maximum lines changed to count as valid commit (default: 30) |
+| `MIN_LINES` | Minimum lines changed to count as valid commit (default: 3) |
 
 > **Never commit `.env` to git.** It is ignored by `.gitignore`.
 
