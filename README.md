@@ -11,7 +11,7 @@ Users lock USDC into a smart contract for a personal goal. An AI agent monitors 
 The agent uses a rule-based filter to ensure only real code contributions are rewarded:
 - **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted. Text/Image files are ignored.
 - **Keywords:** Commits must contain programming keywords (`function`, `import`, `def`, `class`, etc.).
-- **Minimum Lines:** At least **3 lines** of changes are required.
+- **No Minimum Lines:** Even 1-line bug fixes are accepted if they contain valid code logic.
 
 ## Architecture
 
