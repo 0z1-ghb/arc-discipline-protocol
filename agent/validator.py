@@ -21,9 +21,6 @@ PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
-# Quality Filter Thresholds
-# No minimum line limit to encourage small but valuable fixes (e.g., 1-line bug fixes).
-
 # Rule-Based Quality Filter Constants
 VALID_EXTENSIONS = {'.py', '.js', '.ts', '.jsx', '.tsx', '.sol', '.rs', '.go', '.java', '.cpp', '.c', '.h', '.html', '.css', '.scss'}
 CODE_KEYWORDS = {'function', 'def', 'class', 'import', 'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'struct', 'fn', 'pub', 'use', 'async', 'await', 'export'}
@@ -75,9 +72,9 @@ def get_latest_pending_id(w3) -> int:
         
         for i in range(total, 0, -1):
             status = contract.functions.getCommitment(i).call()
-            # status: user, amount, goal, githubUsername, createdAt, completed, failed, refunded
-            # index 5: completed, index 6: failed
-            if not status[5] and not status[6]:
+            # status: user, amount, goal, githubUsername, createdAt, deadline, completed, failed, refunded
+            # index 6: completed, index 7: failed
+            if not status[6] and not status[7]:
                 return i
         return 0
     except Exception as e:
@@ -105,6 +102,29 @@ def call_complete_task(w3, commitment_id):
         logger.info(f"completeTask successful! TX: {receipt.transactionHash.hex()}")
     else:
         logger.error(f"completeTask failed! TX: {receipt.transactionHash.hex()}")
+    return receipt.transactionHash.hex()
+
+def call_fail_task(w3, commitment_id):
+    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+    account = w3.eth.account.from_key(PRIVATE_KEY)
+    nonce = w3.eth.get_transaction_count(account.address)
+    
+    tx = contract.functions.failTask(commitment_id).build_transaction({
+        "from": account.address,
+        "nonce": nonce,
+        "gas": 300000,
+        "gasPrice": w3.eth.gas_price,
+        "chainId": w3.eth.chain_id,
+    })
+    
+    signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
+    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    
+    if receipt.status == 1:
+        logger.info(f"failTask successful! TX: {receipt.transactionHash.hex()}")
+    else:
+        logger.error(f"failTask failed! TX: {receipt.transactionHash.hex()}")
     return receipt.transactionHash.hex()
 
 # ---------------------------------------------------------------------------
@@ -223,6 +243,7 @@ def main():
     
     logger.info(f"Check interval: 60s")
     logger.info(f"Quality Filter: Active (Extensions + Keywords)")
+    logger.info(f"Auto-Fail: Active (24h Deadline)")
     
     while True:
         try:
@@ -234,18 +255,28 @@ def main():
                     
                     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
                     status = contract.functions.getCommitment(commitment_id).call()
+                    
                     username = status[3]
-                    created_at_timestamp = status[4] # uint256 createdAt
+                    deadline = status[5] # uint256 deadline
                     
-                    logger.info(f"Checking GitHub activity for: {username} (Task created: {datetime.fromtimestamp(created_at_timestamp)})")
+                    logger.info(f"Checking GitHub activity for: {username} (Deadline: {datetime.fromtimestamp(deadline)})")
                     
-                    if check_github_commit(username, created_at_timestamp):
-                        if OFFLINE_MODE:
-                            logger.info("[OFFLINE] completeTask would be called.")
+                    # Check if deadline has passed
+                    if time.time() > deadline:
+                        logger.warning(f"Task {commitment_id} deadline passed! Triggering failTask.")
+                        if not OFFLINE_MODE:
+                            call_fail_task(w3, commitment_id)
                         else:
-                            call_complete_task(w3, commitment_id)
+                            logger.info("[OFFLINE] failTask would be called.")
                     else:
-                        logger.info("No valid code commit found for today.")
+                        # Deadline not passed, check for commits
+                        if check_github_commit(username, status[4]): # status[4] is createdAt
+                            if OFFLINE_MODE:
+                                logger.info("[OFFLINE] completeTask would be called.")
+                            else:
+                                call_complete_task(w3, commitment_id)
+                        else:
+                            logger.info("No valid code commit found yet. Waiting...")
                 else:
                     logger.info("No pending tasks.")
             else:
