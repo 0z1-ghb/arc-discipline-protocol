@@ -131,9 +131,9 @@ def is_valid_code_change(files):
             
     return False
 
-def check_github_commit(username: str) -> bool:
+def check_github_commit(username: str, task_created_at: int) -> bool:
     """
-    Checks if the user has pushed a valid code commit today.
+    Checks if the user has pushed a valid code commit AFTER the task was created.
     """
     if not GITHUB_TOKEN:
         logger.warning("GITHUB_TOKEN not set. Skipping check.")
@@ -176,6 +176,15 @@ def check_github_commit(username: str) -> bool:
                             
                             if commit_resp.status_code == 200:
                                 commit_data = commit_resp.json()
+                                
+                                # 1. Time Check: Commit must be AFTER task creation
+                                commit_date_str = commit_data['commit']['committer']['date']
+                                commit_timestamp = datetime.fromisoformat(commit_date_str.replace('Z', '+00:00')).timestamp()
+                                
+                                if commit_timestamp < task_created_at:
+                                    logger.info(f"Commit {sha} is older than task creation. Ignored.")
+                                    continue
+
                                 stats = commit_data.get('stats', {})
                                 total_changes = stats.get('total', 0)
                                 
@@ -229,10 +238,11 @@ def main():
                     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
                     status = contract.functions.getCommitment(commitment_id).call()
                     username = status[3]
+                    created_at_timestamp = status[4] # uint256 createdAt
                     
-                    logger.info(f"Checking GitHub activity for: {username}")
+                    logger.info(f"Checking GitHub activity for: {username} (Task created: {datetime.fromtimestamp(created_at_timestamp)})")
                     
-                    if check_github_commit(username):
+                    if check_github_commit(username, created_at_timestamp):
                         if OFFLINE_MODE:
                             logger.info("[OFFLINE] completeTask would be called.")
                         else:

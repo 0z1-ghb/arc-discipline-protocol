@@ -22,6 +22,7 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         uint256 amount;
         string goal;
         string githubUsername;
+        uint256 createdAt;
         bool completed;
         bool failed;
         bool refunded;
@@ -63,6 +64,7 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
             amount: _amount,
             goal: _goal,
             githubUsername: _githubUsername,
+            createdAt: block.timestamp,
             completed: false,
             failed: false,
             refunded: false
@@ -128,11 +130,12 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         uint256 amount,
         string memory goal,
         string memory githubUsername,
+        uint256 createdAt,
         bool completed,
         bool failed,
         bool refunded
     ) {
         Commitment storage c = commitments[_commitmentId];
-        return (c.user, c.amount, c.goal, c.githubUsername, c.completed, c.failed, c.refunded);
+        return (c.user, c.amount, c.goal, c.githubUsername, c.createdAt, c.completed, c.failed, c.refunded);
     }
 }
