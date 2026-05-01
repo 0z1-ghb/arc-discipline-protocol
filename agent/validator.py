@@ -18,7 +18,6 @@ OFFLINE_MODE = os.getenv("OFFLINE_MODE", "true").lower() == "true"
 RPC_URL = os.getenv("RPC_URL", "https://rpc.arc.network")
 CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0xYourContractAddressHere")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
-PENALTY_ADDRESS = os.getenv("PENALTY_ADDRESS", "0xYourPenaltyAddressHere")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
 # Rule-Based Quality Filter Constants

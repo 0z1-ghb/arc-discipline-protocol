@@ -28,17 +28,32 @@ async function main() {
   const usdcAddress = process.env.USDC_ADDRESS || ARC_TESTNET_USDC;
   console.log("\nUSDC Address:", usdcAddress);
 
-  // Validator and penalty addresses
+  // Validator address
   const validator = deployer.address;
-  const penaltyAddress = deployer.address;
 
-  // Deploy Discipline Protocol contract
-  console.log("\nDeploying DisciplineProtocol...");
+  // Deploy RewardPool first (needs USDC and Protocol address, but Protocol needs Pool address)
+  // Circular dependency!
+  // Solution: Deploy Pool with a dummy protocol address, then deploy Protocol with Pool address, then update Pool's protocol address?
+  // Or: Deploy Protocol first with a dummy pool address, then deploy Pool with Protocol address, then update Protocol's pool address.
+  // Let's do: Deploy Protocol with deployer as pool (temp), then deploy Pool with Protocol address, then update Protocol.
+  
+  console.log("\n[1] Deploying DisciplineProtocol (Temp Pool)...");
   const DisciplineProtocol = await hre.ethers.getContractFactory("DisciplineProtocol");
-  const protocol = await DisciplineProtocol.deploy(usdcAddress, validator, penaltyAddress);
+  const protocol = await DisciplineProtocol.deploy(usdcAddress, validator, deployer.address);
   await protocol.waitForDeployment();
   const protocolAddress = await protocol.getAddress();
   console.log("DisciplineProtocol deployed to:", protocolAddress);
+
+  console.log("\n[2] Deploying RewardPool...");
+  const RewardPool = await hre.ethers.getContractFactory("RewardPool");
+  const rewardPool = await RewardPool.deploy(usdcAddress, protocolAddress);
+  await rewardPool.waitForDeployment();
+  const rewardPoolAddress = await rewardPool.getAddress();
+  console.log("RewardPool deployed to:", rewardPoolAddress);
+
+  console.log("\n[3] Linking Protocol to RewardPool...");
+  await protocol.setRewardPool(rewardPoolAddress);
+  console.log("Protocol linked to RewardPool!");
 
   // Save ABI
   const abiPath = path.join(__dirname, "..", "agent", "contract_abi.json");
@@ -55,17 +70,17 @@ async function main() {
 OFFLINE_MODE=false
 RPC_URL=https://rpc.testnet.arc.network
 CONTRACT_ADDRESS=${protocolAddress}
+REWARD_POOL_ADDRESS=${rewardPoolAddress}
 USDC_ADDRESS=${usdcAddress}
 PRIVATE_KEY=YOUR_PRIVATE_KEY_HERE
-PENALTY_ADDRESS=${penaltyAddress}
-WORD_COUNT_THRESHOLD=100
 `;
   fs.writeFileSync(envExamplePath, envContent);
   console.log(".env.example updated");
 
   console.log("\n" + "=".repeat(60));
   console.log("Deployment complete!");
-  console.log("Explorer: https://testnet.arcscan.app/address/" + protocolAddress);
+  console.log("Protocol: https://testnet.arcscan.app/address/" + protocolAddress);
+  console.log("Pool: https://testnet.arcscan.app/address/" + rewardPoolAddress);
   console.log("=".repeat(60));
 }
 

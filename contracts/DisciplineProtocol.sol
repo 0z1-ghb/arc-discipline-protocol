@@ -9,7 +9,7 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     IERC20 public immutable usdc;
 
     address public validator;
-    address public penaltyAddress;
+    address public rewardPool; // Address of the RewardPool contract
 
     uint256 public constant MAX_SCORE = 1000;
     uint256 public constant SUCCESS_POINTS = 10;
@@ -36,15 +36,15 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     event TaskCompleted(uint256 commitmentId, address user, uint256 newScore);
     event TaskFailed(uint256 commitmentId, address user, uint256 penaltyAmount, uint256 newScore);
     event ValidatorUpdated(address oldValidator, address newValidator);
-    event PenaltyAddressUpdated(address oldPenalty, address newPenalty);
+    event PenaltyAddressUpdated(address oldPool, address newPool);
 
-    constructor(address _usdc, address _validator, address _penaltyAddress) Ownable(msg.sender) {
+    constructor(address _usdc, address _validator, address _rewardPool) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
         require(_validator != address(0), "Invalid validator address");
-        require(_penaltyAddress != address(0), "Invalid penalty address");
+        require(_rewardPool != address(0), "Invalid reward pool address");
         usdc = IERC20(_usdc);
         validator = _validator;
-        penaltyAddress = _penaltyAddress;
+        rewardPool = _rewardPool;
     }
 
     modifier onlyValidator() {
@@ -97,7 +97,7 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(!c.completed && !c.failed, "Already resolved");
 
         c.failed = true;
-        require(usdc.transfer(penaltyAddress, c.amount), "Penalty transfer failed");
+        require(usdc.transfer(rewardPool, c.amount), "Penalty transfer failed");
 
         uint256 currentScore = disciplineScores[c.user];
         uint256 newScore = 0;
@@ -121,10 +121,10 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         validator = _newValidator;
     }
 
-    function setPenaltyAddress(address _newPenaltyAddress) external onlyOwner {
-        require(_newPenaltyAddress != address(0), "Invalid penalty address");
-        emit PenaltyAddressUpdated(penaltyAddress, _newPenaltyAddress);
-        penaltyAddress = _newPenaltyAddress;
+    function setRewardPool(address _newRewardPool) external onlyOwner {
+        require(_newRewardPool != address(0), "Invalid reward pool address");
+        emit PenaltyAddressUpdated(rewardPool, _newRewardPool);
+        rewardPool = _newRewardPool;
     }
 
     function getCommitment(uint256 _commitmentId) external view returns (

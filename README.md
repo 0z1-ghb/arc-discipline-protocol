@@ -21,12 +21,19 @@ The agent uses a rule-based filter to ensure only real code contributions are re
 ### 3. Auto-Fail (24h Deadline)
 - **Time Limit:** Each task has a **24-hour deadline**.
 - **Automatic Penalty:** If the deadline passes without a valid commit, the agent automatically triggers `failTask`.
-- **Consequence:** The locked USDC is sent to the penalty address, and the user's reputation score decreases by 20 points.
+- **Consequence:** The locked USDC is sent to the **RewardPool**, and the user's reputation score decreases by 20 points. Successful users can later claim rewards from this pool based on their score.
+
+### 4. Reward Pool (Survivor Pool Model)
+- **Penalties Fund Rewards:** Failed stakes are sent to the `RewardPool` contract.
+- **Score-Based Claims:** Users with a Discipline Score >= 100 can claim rewards.
+- **Proportional Distribution:** Reward = `(PoolBalance * UserScore) / 1000`. Higher scores get larger rewards.
 
 ## Architecture
 
 ```
 User → deposits USDC + GitHub Username → Smart Contract → AI Validator (GitHub API) → completeTask / failTask
+                                                              ↓
+                                                        RewardPool (penalties distributed to top users)
 ```
 
 | Component | Tech |
@@ -64,9 +71,9 @@ Copy `.env.example` to `.env` and fill in your values:
 |----------|-------------|
 | `OFFLINE_MODE` | `true` for local testing, `false` for on-chain |
 | `RPC_URL` | Arc Network RPC endpoint |
-| `CONTRACT_ADDRESS` | Deployed contract address |
+| `CONTRACT_ADDRESS` | Deployed DisciplineProtocol contract address |
+| `REWARD_POOL_ADDRESS` | Deployed RewardPool contract address |
 | `PRIVATE_KEY` | Validator wallet private key |
-| `PENALTY_ADDRESS` | Address that receives failed stakes |
 | `GITHUB_TOKEN` | GitHub Personal Access Token (Classic) for API access |
 
 > **Never commit `.env` to git.** It is ignored by `.gitignore`.
@@ -76,6 +83,7 @@ Copy `.env.example` to `.env` and fill in your values:
 ```
 ├── contracts/
 │   ├── DisciplineProtocol.sol   # Main contract
+│   ├── RewardPool.sol           # Penalty pool & reward distribution
 │   └── MockUSDC.sol             # Test ERC20
 ├── agent/
 │   ├── validator.py             # AI GitHub validator
