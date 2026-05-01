@@ -18,10 +18,10 @@ async function main() {
 
   const protocol = await ethers.getContractAt("DisciplineProtocol", protocolAddress);
 
-  // Get task ID from arguments or default to latest
-  const taskId = process.argv[2];
+  // Get task ID from environment variable
+  const taskId = process.env.TASK_ID;
   if (!taskId) {
-    console.error("\nUsage: npx hardhat run scripts/fail_task.js --network arcTestnet <TASK_ID>");
+    console.error("\nUsage: TASK_ID=2 npx hardhat run scripts/fail_task.js --network arcTestnet");
     process.exit(1);
   }
 
