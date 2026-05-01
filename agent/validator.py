@@ -75,7 +75,9 @@ def get_latest_pending_id(w3) -> int:
         
         for i in range(total, 0, -1):
             status = contract.functions.getCommitment(i).call()
-            if not status[4] and not status[5]:
+            # status: user, amount, goal, githubUsername, createdAt, completed, failed, refunded
+            # index 5: completed, index 6: failed
+            if not status[5] and not status[6]:
                 return i
         return 0
     except Exception as e:
