@@ -1,0 +1,5 @@
+Bu bir test yazısıdır.
+Kod değildir.
+Sadece metin.
+Spam korumasını test ediyoruz.
+Burası 5. satır.
