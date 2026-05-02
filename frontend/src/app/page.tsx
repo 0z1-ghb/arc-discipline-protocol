@@ -65,34 +65,20 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [defaultGithub, setDefaultGithub] = useState('');
   const [copied, setCopied] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
 
-  // Web3 Hooks
-  const { data: scoreData } = useReadContract({
-    address: CONTRACTS.protocol,
-    abi: PROTOCOL_ABI,
-    functionName: 'getScore',
-    args: [address || '0x0'],
-  });
+  // Load saved GitHub username from localStorage when wallet connects
+  useEffect(() => {
+    if (address) {
+      const saved = localStorage.getItem(`github_${address}`);
+      if (saved) {
+        setDefaultGithub(saved);
+        setGithubs({ 0: saved, 1: saved, 2: saved });
+      }
+    }
+  }, [address]);
 
-  const { data: limits } = useReadContract({
-    address: CONTRACTS.protocol,
-    abi: PROTOCOL_ABI,
-    functionName: 'getUserLimits',
-    args: [address || '0x0'],
-  });
-
-  const { writeContract: approve, data: approveHash } = useWriteContract();
-  const { isLoading: isApproving, isSuccess: isApproved } = useWaitForTransactionReceipt({ hash: approveHash });
-
-  const { writeContract: deposit, data: depositHash } = useWriteContract();
-  const { isLoading: isDepositing, isSuccess: isDeposited } = useWaitForTransactionReceipt({ hash: depositHash });
-
-  const { writeContract: claim, data: claimHash } = useWriteContract();
-  const { isLoading: isClaiming, isSuccess: isClaimed } = useWaitForTransactionReceipt({ hash: claimHash });
-
-  const [approvingType, setApprovingType] = useState<number | null>(null);
-
-  // Sync default github to inputs
+  // Sync default github to inputs when it changes manually
   useEffect(() => {
     if (defaultGithub) {
       setGithubs({ 0: defaultGithub, 1: defaultGithub, 2: defaultGithub });
@@ -133,6 +119,14 @@ export default function Dashboard() {
       navigator.clipboard.writeText(address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleSaveGithub = () => {
+    if (address) {
+      localStorage.setItem(`github_${address}`, defaultGithub);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     }
   };
 
@@ -632,7 +626,12 @@ export default function Dashboard() {
                           value={defaultGithub}
                           onChange={(e) => setDefaultGithub(e.target.value)}
                         />
-                        <Button className="bg-arc-blue hover:bg-arc-blue/90 text-white">Save</Button>
+                        <Button 
+                          className="bg-arc-blue hover:bg-arc-blue/90 text-white"
+                          onClick={handleSaveGithub}
+                        >
+                          {saveStatus === 'saved' ? 'Saved!' : 'Save'}
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
