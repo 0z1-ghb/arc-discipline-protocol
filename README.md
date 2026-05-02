@@ -1,55 +1,74 @@
 # Arc Discipline Protocol
 
-On-chain discipline tracker built on **Arc Network**. Lock USDC, AI validates your progress, earn reputation.
+On-chain discipline tracker built on **Arc Network**. Stake USDC, validate GitHub commits via AI, earn **Arc Sparks**, and climb the global Leaderboard.
+
+🌐 **Live Demo:** [arc-discipline.vercel.app](https://arc-discipline.vercel.app) (Replace with actual URL)
 
 ## Concept
 
-Users lock USDC into a smart contract for a personal goal. An AI agent monitors progress via **GitHub commits**. If the goal is met (quality commit detected), funds are refunded and the user earns a **Discipline Score** on-chain.
+Users lock USDC into a smart contract for a personal coding goal. An **AI Agent** monitors progress via **GitHub commits**. If the goal is met (quality commit detected), funds are refunded and the user earns **Arc Sparks** on-chain. Failed stakes fund a **Reward Pool** for top performers.
 
 ## Key Features
 
 ### 1. Task Categories & Scoring
 Users choose a task category when depositing. Points are awarded based on difficulty:
-- **Daily (Bug Fixes):** 10 Points (Max 2 per day)
-- **Weekly (Features/Refactors):** 50 Points (Max 1 per week)
-- **Monthly (New Development):** 200 Points (Max 1 per month)
+- **Daily (Bug Fixes):** 10 Arc Sparks (Max 2 per day)
+- **Weekly (Features/Refactors):** 50 Arc Sparks (Max 1 per week)
+- **Monthly (New Development):** 200 Arc Sparks (Max 1 per month)
 
-### 2. Quality Filter (Anti-Spam)
+### 2. AI Quality Filter (Anti-Spam)
 The agent uses a rule-based filter to ensure only real code contributions are rewarded:
-- **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted. Text/Image files are ignored.
+- **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted.
 - **Keywords:** Commits must contain programming keywords (`function`, `import`, `def`, `class`, etc.).
-- **No Minimum Lines:** Even 1-line bug fixes are accepted if they contain valid code logic.
+- **Task Matching:** Commit messages must match the task type (e.g., "fix:" for Daily tasks).
 
-### 2. Timestamp Protection (No Double Spending)
-- **Fresh Work Only:** The agent only accepts commits made **after** the task was created.
-- **No Reuse:** Users cannot reuse old commits to claim rewards for new tasks.
+### 3. On-Chain Leaderboard
+- **Global Ranking:** Real-time ranking of all users based on Arc Sparks.
+- **Reputation Levels:** Novice → Disciplined → Elite → Legend (0-1000 scale).
+- **Transparency:** All scores and deposits are stored on-chain.
 
-### 3. Auto-Fail (24h Deadline)
-- **Time Limit:** Each task has a **24-hour deadline**.
-- **Automatic Penalty:** If the deadline passes without a valid commit, the agent automatically triggers `failTask`.
-- **Consequence:** The locked USDC is sent to the **RewardPool**, and the user's reputation score decreases by 20 points. Successful users can later claim rewards from this pool based on their score.
-
-### 4. Reward Pool (Survivor Pool Model)
+### 4. Reward Pool (Survivor Model)
 - **Penalties Fund Rewards:** Failed stakes are sent to the `RewardPool` contract.
-- **Score-Based Claims:** Users with a Discipline Score >= 100 can claim rewards.
-- **Proportional Distribution:** Reward = `(PoolBalance * UserScore) / 1000`. Higher scores get larger rewards.
+- **Score-Based Claims:** Users with Arc Sparks >= 100 can claim rewards.
+- **Proportional Distribution:** Higher scores get larger rewards from the pool.
+
+### 5. Modern Frontend
+- **Next.js + Vercel:** Fast, responsive dashboard.
+- **Wallet Integration:** RainbowKit + wagmi for seamless connection.
+- **Real-Time Stats:** Live monitoring of limits, progress, and leaderboard.
+- **Arc Theme:** Glassmorphism UI with grid background and gradient accents.
 
 ## Architecture
 
 ```
-User → deposits USDC + GitHub Username → Smart Contract → AI Validator (GitHub API) → completeTask / failTask
+User → Frontend (Next.js/Vercel) → Smart Contract (Arc) ↔ AI Validator (Python)
                                                               ↓
-                                                        RewardPool (penalties distributed to top users)
+                                                        RewardPool (penalties → rewards)
 ```
 
 | Component | Tech |
 |-----------|------|
 | Smart Contract | Solidity + OpenZeppelin |
 | AI Validator | Python + web3.py + GitHub API |
+| Frontend | Next.js + Tailwind + RainbowKit |
 | Network | Arc Network (EVM-compatible) |
+
+## Live Deployment
+
+**Network:** Arc Testnet (Chain ID: 5042002)
+**RPC:** `https://rpc.testnet.arc.network`
+
+| Contract | Address |
+|----------|---------|
+| DisciplineProtocol | `0x985C50195021A96746559556375c0E4464275eEf` |
+| RewardPool | `0xe253A8e6501a32D8197367064a13E67f8d3eEa65` |
+| USDC | `0x3600000000000000000000000000000000000000` |
+
+> 💡 **Get Test USDC:** [Circle Faucet](https://faucet.circle.com/)
 
 ## Quick Start
 
+### Backend (Contract + Agent)
 ```bash
 # Install dependencies
 npm install
@@ -59,9 +78,6 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your values (RPC, Private Key, GitHub Token)
 
-# Run mock tests
-npx hardhat run scripts/mock_test.js
-
 # Deploy to Arc Testnet
 npx hardhat run scripts/deploy.js --network arcTestnet
 
@@ -69,36 +85,28 @@ npx hardhat run scripts/deploy.js --network arcTestnet
 python agent/validator.py
 ```
 
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in your values:
-
-| Variable | Description |
-|----------|-------------|
-| `OFFLINE_MODE` | `true` for local testing, `false` for on-chain |
-| `RPC_URL` | Arc Network RPC endpoint |
-| `CONTRACT_ADDRESS` | Deployed DisciplineProtocol contract address |
-| `REWARD_POOL_ADDRESS` | Deployed RewardPool contract address |
-| `PRIVATE_KEY` | Validator wallet private key |
-| `GITHUB_TOKEN` | GitHub Personal Access Token (Classic) for API access |
-
-> **Never commit `.env` to git.** It is ignored by `.gitignore`.
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ## Project Structure
 
 ```
 ├── contracts/
-│   ├── DisciplineProtocol.sol   # Main contract
-│   ├── RewardPool.sol           # Penalty pool & reward distribution
-│   └── MockUSDC.sol             # Test ERC20
+│   ├── DisciplineProtocol.sol   # Main contract (Staking, Scoring, Leaderboard)
+│   └── RewardPool.sol           # Penalty pool & reward distribution
 ├── agent/
 │   ├── validator.py             # AI GitHub validator
 │   └── contract_abi.json        # Auto-generated ABI
+├── frontend/
+│   ├── src/app/                 # Next.js pages & components
+│   └── src/lib/                 # Contract ABIs & config
 ├── scripts/
-│   ├── deploy.js                # Deployment script
-│   └── mock_test.js             # Local simulation
+│   └── deploy.js                # Deployment script
 ├── .env.example                 # Environment template
-├── requirements.txt             # Python dependencies
 └── hardhat.config.js
 ```
 
