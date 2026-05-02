@@ -1,0 +1,21 @@
+export const CONTRACTS = {
+  protocol: '0x957a2cCdc6F03F44411d31D790B7a5cF41E551E1',
+  pool: '0x20576B10CF873238AAEcF4EAB9F06d1ba278bb48',
+  usdc: '0x3600000000000000000000000000000000000000',
+} as const;
+
+export const PROTOCOL_ABI = [
+  { inputs: [{ internalType: 'uint256', name: '_amount', type: 'uint256' }, { internalType: 'uint8', name: '_taskType', type: 'uint8' }, { internalType: 'string', name: '_githubUsername', type: 'string' }], name: 'deposit', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ internalType: 'address', name: '_user', type: 'address' }], name: 'getScore', outputs: [{ internalType: 'uint256', name: 'score', type: 'uint256' }, { internalType: 'string', name: 'level', type: 'string' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'address', name: '_user', type: 'address' }], name: 'getUserLimits', outputs: [{ internalType: 'uint256', name: 'dailyCount', type: 'uint256' }, { internalType: 'uint256', name: 'weeklyCount', type: 'uint256' }, { internalType: 'uint256', name: 'monthlyCount', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+] as const;
+
+export const POOL_ABI = [
+  { inputs: [], name: 'claim', outputs: [], stateMutability: 'nonpayable', type: 'function' },
+] as const;
+
+export const ERC20_ABI = [
+  { inputs: [{ internalType: 'address', name: 'spender', type: 'address' }, { internalType: 'uint256', name: 'amount', type: 'uint256' }], name: 'approve', outputs: [{ internalType: 'bool', name: '', type: 'bool' }], stateMutability: 'nonpayable', type: 'function' },
+  { inputs: [{ internalType: 'address', name: 'account', type: 'address' }, { internalType: 'address', name: 'spender', type: 'address' }], name: 'allowance', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'address', name: 'account', type: 'address' }], name: 'balanceOf', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+] as const;
