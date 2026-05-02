@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CONTRACTS, PROTOCOL_ABI, POOL_ABI } from '@/lib/contracts';
+import { CONTRACTS, PROTOCOL_ABI, POOL_ABI, ERC20_ABI } from '@/lib/contracts';
 import { parseUnits, formatUnits } from 'viem';
 
 const TASKS = [
@@ -69,11 +69,25 @@ export default function Dashboard() {
     args: [address || '0x0'],
   });
 
+  const { writeContract: approve, data: approveHash } = useWriteContract();
+  const { isLoading: isApproving, isSuccess: isApproved } = useWaitForTransactionReceipt({ hash: approveHash });
+
   const { writeContract: deposit, data: depositHash } = useWriteContract();
   const { isLoading: isDepositing, isSuccess: isDeposited } = useWaitForTransactionReceipt({ hash: depositHash });
 
-  const { writeContract: claim, data: claimHash } = useWriteContract();
-  const { isLoading: isClaiming, isSuccess: isClaimed } = useWaitForTransactionReceipt({ hash: claimHash });
+  const [approvingType, setApprovingType] = useState<number | null>(null);
+
+  const handleApprove = async (type: number) => {
+    const amt = amounts[type];
+    if (!amt || !address) return;
+    setApprovingType(type);
+    approve({
+      address: CONTRACTS.usdc,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [CONTRACTS.protocol, parseUnits(amt, 6)],
+    });
+  };
 
   const handleDeposit = (type: number) => {
     const amt = amounts[type];
@@ -242,11 +256,18 @@ export default function Dashboard() {
 
                   <Button 
                     className={`w-full ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
-                    onClick={() => handleDeposit(task.id)}
-                    disabled={isDepositing || !github || !amounts[task.id]}
+                    onClick={() => {
+                      if (approvingType === task.id && isApproved) {
+                        handleDeposit(task.id);
+                      } else {
+                        handleApprove(task.id);
+                      }
+                    }}
+                    disabled={isApproving || isDepositing || !github || !amounts[task.id]}
                   >
-                    {isDepositing ? 'Processing...' : 'Deposit & Start'}
+                    {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit & Start' : 'Approve USDC'}
                   </Button>
+                  {isApproved && approvingType === task.id && <p className="text-arc-teal text-xs text-center">Approved! Now click to deposit.</p>}
                   {isDeposited && <p className="text-arc-teal text-xs text-center">Deposit successful!</p>}
                 </CardContent>
               </Card>
