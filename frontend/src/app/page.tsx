@@ -195,7 +195,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             <a 
-              href="https://faucet.testnet.arc.network" 
+              href="https://faucet.circle.com/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="pill bg-arc-blue/10 text-arc-blue border-arc-blue/30 hover:bg-arc-blue/20 transition-colors"
