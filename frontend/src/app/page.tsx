@@ -4,7 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -194,6 +194,14 @@ export default function Dashboard() {
             <span className="font-bold text-lg tracking-tight">ARC DISCIPLINE</span>
           </div>
           <div className="flex items-center gap-3">
+            <a 
+              href="https://faucet.testnet.arc.network" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="pill bg-arc-blue/10 text-arc-blue border-arc-blue/30 hover:bg-arc-blue/20 transition-colors"
+            >
+              <Droplets className="w-3 h-3" /> Faucet
+            </a>
             {isConnected && (
               <div className="relative group">
                 <div className="absolute inset-0 bg-arc-teal/20 rounded-full blur-md group-hover:bg-arc-teal/30 transition-all" />
