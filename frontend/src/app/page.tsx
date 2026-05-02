@@ -60,6 +60,31 @@ export default function Dashboard() {
   const { data: balance } = useBalance({ address });
   const { disconnect } = useDisconnect();
   
+  // Web3 Read Hooks
+  const { data: scoreData } = useReadContract({
+    address: CONTRACTS.protocol,
+    abi: PROTOCOL_ABI,
+    functionName: 'getScore',
+    args: [address || '0x0'],
+  });
+
+  const { data: limits } = useReadContract({
+    address: CONTRACTS.protocol,
+    abi: PROTOCOL_ABI,
+    functionName: 'getUserLimits',
+    args: [address || '0x0'],
+  });
+
+  // Web3 Write Hooks
+  const { writeContract: approve, data: approveHash } = useWriteContract();
+  const { isLoading: isApproving, isSuccess: isApproved } = useWaitForTransactionReceipt({ hash: approveHash });
+
+  const { writeContract: deposit, data: depositHash } = useWriteContract();
+  const { isLoading: isDepositing, isSuccess: isDeposited } = useWaitForTransactionReceipt({ hash: depositHash });
+
+  const { writeContract: claim, data: claimHash } = useWriteContract();
+  const { isLoading: isClaiming, isSuccess: isClaimed } = useWaitForTransactionReceipt({ hash: claimHash });
+
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [activeTab, setActiveTab] = useState('dashboard');
