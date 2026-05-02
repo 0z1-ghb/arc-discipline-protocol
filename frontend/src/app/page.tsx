@@ -252,99 +252,90 @@ export default function Dashboard() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-        {/* Hero */}
-        <motion.section 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          className="text-center space-y-6 py-8"
-        >
-          <div className="pill mx-auto w-fit">
-            <span className="w-2 h-2 rounded-full bg-arc-teal animate-pulse" />
-            Live on Arc Testnet
-          </div>
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[minmax(180px,auto)]">
           
-          <h1 className="text-4xl md:text-6xl font-bold">
-            Code. Commit.{' '}
-            <span className="gradient-text">Earn.</span>
-          </h1>
-          
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Bring your discipline on-chain. Stake USDC, validate GitHub commits, and earn Arc Sparks with every successful task.
-          </p>
+          {/* Hero Section - Full Width */}
+          <motion.section 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="col-span-full glass rounded-xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-arc-teal/5 to-transparent pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <div className="pill mx-auto w-fit">
+                <span className="w-2 h-2 rounded-full bg-arc-teal animate-pulse" />
+                Live on Arc Testnet
+              </div>
+              
+              <h1 className="text-4xl md:text-5xl font-bold">
+                Code. Commit.{' '}
+                <span className="gradient-text">Earn.</span>
+              </h1>
+              
+              <p className="text-lg text-white/60 max-w-xl mx-auto">
+                Stake USDC, validate GitHub commits, and earn Arc Sparks.
+              </p>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto pt-4">
-            <div className="stat-card">
-              <div className="text-2xl font-bold text-arc-teal">Live</div>
-              <div className="text-xs text-white/50 mt-1">On Arc Testnet</div>
+              <div className="flex flex-wrap justify-center gap-4 pt-2">
+                <div className="feature-item">
+                  <CheckCircle2 className="w-4 h-4 text-arc-teal" />
+                  <span>AI-Validated</span>
+                </div>
+                <div className="feature-item">
+                  <Lock className="w-4 h-4 text-arc-blue" />
+                  <span>On-Chain</span>
+                </div>
+                <div className="feature-item">
+                  <Award className="w-4 h-4 text-arc-purple" />
+                  <span>Rewards</span>
+                </div>
+              </div>
             </div>
-            <div className="stat-card">
-              <div className="text-2xl font-bold text-arc-blue">24h</div>
-              <div className="text-xs text-white/50 mt-1">Auto Deadline</div>
-            </div>
-          </div>
+          </motion.section>
 
-          {/* Feature Highlights */}
-          <div className="flex flex-wrap justify-center gap-6 pt-2">
-            <div className="feature-item">
-              <CheckCircle2 className="w-4 h-4 text-arc-teal" />
-              <span>AI-Validated Commits</span>
-            </div>
-            <div className="feature-item">
-              <Lock className="w-4 h-4 text-arc-blue" />
-              <span>On-Chain Staking</span>
-            </div>
-            <div className="feature-item">
-              <Award className="w-4 h-4 text-arc-purple" />
-              <span>Reward Pool</span>
-            </div>
-          </div>
-        </motion.section>
-
-        {/* Task Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TASKS.map((task, i) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className={`glass h-full hover:border-white/20 transition-all duration-300`}>
-                <CardHeader className={`pb-2 ${task.bg} rounded-t-xl`}>
-                  <div className="flex justify-between items-start">
+          {/* Task Cards - Large Block (2 cols, 2 rows) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="col-span-1 md:col-span-2 row-span-2 glass rounded-xl p-6 flex flex-col gap-4 overflow-y-auto"
+          >
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Zap className="w-5 h-5 text-arc-teal" /> Active Tasks
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {TASKS.map((task, i) => (
+                <div key={task.id} className={`p-4 rounded-lg border ${task.border} ${task.bg} transition-all hover:brightness-110`}>
+                  <div className="flex justify-between items-start mb-2">
                     <div>
-                      <CardTitle className={`text-xl ${task.color}`}>{task.title}</CardTitle>
-                      <CardDescription className="text-white/50">{task.type} Task</CardDescription>
+                      <h3 className={`font-bold ${task.color}`}>{task.title}</h3>
+                      <p className="text-xs text-white/50">{task.type} • Limit: {task.limit}</p>
                     </div>
                     <Badge className={`${task.bg} ${task.color} border-0`}>{task.reward}</Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                  <p className="text-sm text-white/70">{task.desc}</p>
-                  <div className="flex items-center gap-2 text-xs text-white/50">
-                    <Clock className="w-3 h-3" /> Limit: {task.limit}
-                  </div>
+                  <p className="text-xs text-white/60 mb-3">{task.desc}</p>
                   
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
                     <Input 
                       placeholder="GitHub Username" 
-                      className="glass border-white/10 text-white placeholder:text-white/30"
+                      className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
                       value={githubs[task.id]}
                       onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
                     />
                     <Input 
                       type="number" 
                       placeholder="Amount (USDC)" 
-                      className="glass border-white/10 text-white placeholder:text-white/30"
+                      className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
                       value={amounts[task.id]}
                       onChange={(e) => setAmounts({...amounts, [task.id]: e.target.value})}
                     />
                   </div>
 
                   <Button 
-                    className={`w-full ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
+                    size="sm"
+                    className={`w-full h-8 text-xs ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
                     onClick={() => {
                       if (approvingType === task.id && isApproved) {
                         handleDeposit(task.id);
@@ -354,124 +345,120 @@ export default function Dashboard() {
                     }}
                     disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
                   >
-                    {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit & Start' : 'Approve USDC'}
+                    {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit' : 'Approve USDC'}
                   </Button>
-                  {isApproved && approvingType === task.id && <p className="text-arc-teal text-xs text-center">Approved! Now click to deposit.</p>}
-                  {isDeposited && <p className="text-arc-teal text-xs text-center">Deposit successful!</p>}
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </section>
+                  {isDeposited && approvingType === task.id && <p className="text-arc-teal text-[10px] text-center mt-1">Success!</p>}
+                </div>
+              ))}
+            </div>
+          </motion.div>
 
-        {/* Monitor & Stats */}
-        <section>
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-arc-teal" /> Active Monitor
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="p-4 rounded-xl bg-white/5">
-                  <div className="text-2xl font-bold text-arc-teal">{2 - dailyUsed}</div>
-                  <div className="text-xs text-white/50">Daily Left</div>
+          {/* Leaderboard - Tall Block (1 col, 2 rows) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="col-span-1 md:col-span-1 row-span-2 glass rounded-xl p-6 flex flex-col overflow-hidden"
+          >
+            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+              <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
+            </h2>
+            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+              {leaderboard.length > 0 ? (
+                leaderboard.map((user, index) => (
+                  <div key={user.address} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-white/40 w-6">
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                      </span>
+                      <div>
+                        <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
+                        <div className="text-[10px] text-white/40">{user.level}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-arc-teal">{user.score}</div>
+                      <div className="text-[10px] text-white/40">{user.deposited.toFixed(1)} USDC</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-white/30">
+                  <Trophy className="w-8 h-8 mb-2" />
+                  <p className="text-xs">No users yet</p>
                 </div>
-                <div className="p-4 rounded-xl bg-white/5">
-                  <div className="text-2xl font-bold text-arc-blue">{1 - weeklyUsed}</div>
-                  <div className="text-xs text-white/50">Weekly Left</div>
-                </div>
-                <div className="p-4 rounded-xl bg-white/5">
-                  <div className="text-2xl font-bold text-arc-purple">{1 - monthlyUsed}</div>
-                  <div className="text-xs text-white/50">Monthly Left</div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-white/60">Arc Sparks Progress</span>
-                  <span className="text-white">{score.toString()} / 1000</span>
-                </div>
-                <Progress value={(Number(score) / 1000) * 100} className="h-2 bg-white/10" />
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                <div className="text-sm text-white/60">
-                  <span className="text-arc-gold font-medium">Reward Pool</span> • Score {'>'} 100
-                </div>
-                <Button 
-                  size="sm"
-                  className="bg-arc-gold text-black hover:bg-arc-gold/90 font-bold"
-                  onClick={handleClaim}
-                  disabled={isClaiming || Number(score) < 100}
-                >
-                  {isClaiming ? 'Claiming...' : 'Claim'}
-                </Button>
-              </div>
-              {isClaimed && <p className="text-arc-teal text-xs text-center">Reward claimed successfully!</p>}
-            </CardContent>
-          </Card>
-        </section>
+              )}
+            </div>
+          </motion.div>
 
-        {/* Activity Heatmap */}
-        <section>
-          <Heatmap score={Number(score)} />
-        </section>
-
-        {/* Leaderboard Section */}
-        <section>
-          <Card className="glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
-              </CardTitle>
-              <CardDescription>Top developers ranked by Arc Sparks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-white/50 uppercase bg-white/5">
-                    <tr>
-                      <th className="px-4 py-3 rounded-l-lg">Rank</th>
-                      <th className="px-4 py-3">User</th>
-                      <th className="px-4 py-3">Level</th>
-                      <th className="px-4 py-3 text-right">Arc Sparks</th>
-                      <th className="px-4 py-3 text-right rounded-r-lg">Total Deposited</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leaderboard.length > 0 ? (
-                      leaderboard.map((user, index) => (
-                        <tr key={user.address} className="border-b border-white/5 hover:bg-white/5 transition">
-                          <td className="px-4 py-3 font-medium">
-                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs">
-                            {user.address.slice(0, 6)}...{user.address.slice(-4)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant="outline" className="text-xs border-white/10">{user.level}</Badge>
-                          </td>
-                          <td className="px-4 py-3 text-right font-bold text-arc-teal">
-                            {user.score}
-                          </td>
-                          <td className="px-4 py-3 text-right text-white/70">
-                            {user.deposited.toFixed(2)} USDC
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-white/40">
-                          No users yet. Be the first to deposit!
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+          {/* Stats / Monitor - Small Block (1 col) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="col-span-1 glass rounded-xl p-6 flex flex-col justify-between"
+          >
+            <div>
+              <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
+                <TrendingUp className="w-5 h-5 text-arc-blue" /> Stats
+              </h2>
+              <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                <div className="p-2 rounded bg-white/5">
+                  <div className="text-lg font-bold text-arc-teal">{2 - dailyUsed}</div>
+                  <div className="text-[10px] text-white/50">Daily</div>
+                </div>
+                <div className="p-2 rounded bg-white/5">
+                  <div className="text-lg font-bold text-arc-blue">{1 - weeklyUsed}</div>
+                  <div className="text-[10px] text-white/50">Weekly</div>
+                </div>
+                <div className="p-2 rounded bg-white/5">
+                  <div className="text-lg font-bold text-arc-purple">{1 - monthlyUsed}</div>
+                  <div className="text-[10px] text-white/50">Monthly</div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs text-white/60">
+                <span>Progress</span>
+                <span>{score.toString()} / 1000</span>
+              </div>
+              <Progress value={(Number(score) / 1000) * 100} className="h-1.5 bg-white/10" />
+            </div>
+          </motion.div>
+
+          {/* Heatmap - Wide Block (2 cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="col-span-1 md:col-span-2"
+          >
+            <Heatmap score={Number(score)} />
+          </motion.div>
+
+          {/* Reward Pool - Small Block (1 col) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="col-span-1 glass rounded-xl p-6 flex flex-col justify-center items-center text-center border-arc-gold/20"
+          >
+            <Award className="w-8 h-8 text-arc-gold mb-2" />
+            <h3 className="font-bold text-arc-gold mb-1">Reward Pool</h3>
+            <p className="text-xs text-white/50 mb-3">Score {'>'} 100 to claim</p>
+            <Button 
+              size="sm"
+              className="w-full bg-arc-gold text-black hover:bg-arc-gold/90 font-bold text-xs"
+              onClick={handleClaim}
+              disabled={isClaiming || Number(score) < 100}
+            >
+              {isClaiming ? 'Claiming...' : 'Claim Rewards'}
+            </Button>
+            {isClaimed && <p className="text-arc-teal text-[10px] mt-2">Claimed!</p>}
+          </motion.div>
+
+        </div>
       </main>
 
       {/* Footer */}
