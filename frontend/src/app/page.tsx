@@ -210,7 +210,7 @@ export default function Dashboard() {
         >
           <div className="pill mx-auto w-fit">
             <span className="w-2 h-2 rounded-full bg-arc-teal animate-pulse" />
-            Live on Arc Testnet • Season 1 Open
+            Live on Arc Testnet
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold">
@@ -223,7 +223,7 @@ export default function Dashboard() {
           </p>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
+          <div className="grid grid-cols-2 gap-4 max-w-md mx-auto pt-4">
             <div className="stat-card">
               <div className="text-2xl font-bold text-arc-teal">Live</div>
               <div className="text-xs text-white/50 mt-1">On Arc Testnet</div>
@@ -231,10 +231,6 @@ export default function Dashboard() {
             <div className="stat-card">
               <div className="text-2xl font-bold text-arc-blue">24h</div>
               <div className="text-xs text-white/50 mt-1">Auto Deadline</div>
-            </div>
-            <div className="stat-card">
-              <div className="text-2xl font-bold text-arc-purple">S1</div>
-              <div className="text-xs text-white/50 mt-1">Season Open</div>
             </div>
           </div>
 
