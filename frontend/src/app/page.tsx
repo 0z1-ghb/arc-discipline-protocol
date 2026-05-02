@@ -316,7 +316,7 @@ export default function Dashboard() {
         </section>
 
         {/* Monitor & Stats */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section>
           <Card className="glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -345,23 +345,19 @@ export default function Dashboard() {
                 </div>
                 <Progress value={(Number(score) / 1000) * 100} className="h-2 bg-white/10" />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Claim Section */}
-          <Card className="glass border-arc-gold/20">
-            <CardHeader>
-              <CardTitle className="text-arc-gold">Reward Pool</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-white/60">Claim rewards from the pool if your score is above 100.</p>
-              <Button 
-                className="w-full bg-arc-gold text-black hover:bg-arc-gold/90 font-bold"
-                onClick={handleClaim}
-                disabled={isClaiming || Number(score) < 100}
-              >
-                {isClaiming ? 'Claiming...' : 'Claim Rewards'}
-              </Button>
+              <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                <div className="text-sm text-white/60">
+                  <span className="text-arc-gold font-medium">Reward Pool</span> • Score {'>'} 100
+                </div>
+                <Button 
+                  size="sm"
+                  className="bg-arc-gold text-black hover:bg-arc-gold/90 font-bold"
+                  onClick={handleClaim}
+                  disabled={isClaiming || Number(score) < 100}
+                >
+                  {isClaiming ? 'Claiming...' : 'Claim'}
+                </Button>
+              </div>
               {isClaimed && <p className="text-arc-teal text-xs text-center">Reward claimed successfully!</p>}
             </CardContent>
           </Card>
