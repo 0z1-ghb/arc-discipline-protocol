@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Heatmap } from '@/components/ui/heatmap';
 import { CONTRACTS, PROTOCOL_ABI, POOL_ABI, ERC20_ABI } from '@/lib/contracts';
 import { parseUnits, formatUnits } from 'viem';
 
@@ -409,6 +410,11 @@ export default function Dashboard() {
               {isClaimed && <p className="text-arc-teal text-xs text-center">Reward claimed successfully!</p>}
             </CardContent>
           </Card>
+        </section>
+
+        {/* Activity Heatmap */}
+        <section>
+          <Heatmap score={Number(score)} />
         </section>
 
         {/* Leaderboard Section */}
