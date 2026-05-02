@@ -1,13 +1,14 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance, useDisconnect } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Zap, Medal, Trophy, Droplets, Wallet, 
   LayoutDashboard, GitBranch, Award, Settings, 
-  Clock, CheckCircle2, Target, TrendingUp, Users, ListTodo
+  Clock, CheckCircle2, Target, TrendingUp, Users, ListTodo,
+  LogOut, ExternalLink, Copy, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,9 +58,13 @@ const TASKS = [
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
   const { data: balance } = useBalance({ address });
+  const { disconnect } = useDisconnect();
+  
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [defaultGithub, setDefaultGithub] = useState('');
+  const [copied, setCopied] = useState(false);
 
   // Web3 Hooks
   const { data: scoreData } = useReadContract({
@@ -86,6 +91,13 @@ export default function Dashboard() {
   const { isLoading: isClaiming, isSuccess: isClaimed } = useWaitForTransactionReceipt({ hash: claimHash });
 
   const [approvingType, setApprovingType] = useState<number | null>(null);
+
+  // Sync default github to inputs
+  useEffect(() => {
+    if (defaultGithub) {
+      setGithubs({ 0: defaultGithub, 1: defaultGithub, 2: defaultGithub });
+    }
+  }, [defaultGithub]);
 
   const handleApprove = async (type: number) => {
     const amt = amounts[type];
@@ -114,6 +126,14 @@ export default function Dashboard() {
 
   const handleClaim = () => {
     claim({ address: CONTRACTS.pool, abi: POOL_ABI, functionName: 'claim' });
+  };
+
+  const copyAddress = () => {
+    if (address) {
+      navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const score = scoreData ? Number((scoreData as any)[0]) : 0;
@@ -182,7 +202,6 @@ export default function Dashboard() {
     fetchLeaderboard();
   }, [publicClient]);
 
-  // Avatar Initials Logic
   const getAvatarInitials = () => {
     if (address) return address.slice(2, 4).toUpperCase();
     return 'AD';
@@ -262,7 +281,10 @@ export default function Dashboard() {
             >
               <ListTodo className="w-4 h-4" /> Tasks
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-arc-blue/10 text-arc-blue' : 'text-white/50 hover:bg-white/5 hover:text-white'}`}
+            >
               <Settings className="w-4 h-4" /> Settings
             </button>
           </nav>
@@ -575,6 +597,101 @@ export default function Dashboard() {
                     </div>
                   </motion.div>
                 ))}
+              </motion.div>
+            )}
+
+            {/* SETTINGS VIEW */}
+            {activeTab === 'settings' && (
+              <motion.div 
+                key="settings"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="max-w-2xl mx-auto space-y-6"
+              >
+                <div className="mb-8">
+                  <h1 className="text-3xl font-bold mb-2">Settings</h1>
+                  <p className="text-white/50">Manage your profile and preferences.</p>
+                </div>
+
+                {/* Profile Settings */}
+                <Card className="glass border-0 bg-white/[0.02]">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-arc-blue" /> Profile
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm text-white/60 mb-2 block">Default GitHub Username</label>
+                      <p className="text-xs text-white/40 mb-3">This will be used for all tasks automatically.</p>
+                      <div className="flex gap-2">
+                        <Input 
+                          placeholder="e.g. 0z1-ghb" 
+                          className="bg-black/20 border-white/10 text-white placeholder:text-white/20"
+                          value={defaultGithub}
+                          onChange={(e) => setDefaultGithub(e.target.value)}
+                        />
+                        <Button className="bg-arc-blue hover:bg-arc-blue/90 text-white">Save</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Wallet Settings */}
+                <Card className="glass border-0 bg-white/[0.02]">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Wallet className="w-5 h-5 text-arc-purple" /> Wallet & Network
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm text-white/60 mb-2 block">Connected Address</label>
+                      <div className="flex items-center gap-2 bg-black/20 border border-white/10 rounded-md px-3 py-2">
+                        <code className="text-sm text-white/80 flex-1 truncate">{address || 'Not connected'}</code>
+                        {address && (
+                          <button onClick={copyAddress} className="text-white/50 hover:text-white transition">
+                            {copied ? <Check className="w-4 h-4 text-arc-teal" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                      <div>
+                        <div className="text-sm text-white/60">Network</div>
+                        <div className="text-sm font-medium text-arc-teal">Arc Testnet</div>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                        onClick={() => disconnect()}
+                      >
+                        <LogOut className="w-4 h-4 mr-2" /> Disconnect
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* About */}
+                <Card className="glass border-0 bg-white/[0.02]">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <ExternalLink className="w-5 h-5 text-arc-gold" /> Resources
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-4">
+                    <a href="https://docs.arc.network/" target="_blank" rel="noopener noreferrer" className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition flex flex-col items-center text-center gap-2">
+                      <div className="text-sm font-medium">Documentation</div>
+                      <div className="text-xs text-white/40">Learn how to build on Arc</div>
+                    </a>
+                    <a href="https://github.com/0z1-ghb/arc-discipline-protocol" target="_blank" rel="noopener noreferrer" className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition flex flex-col items-center text-center gap-2">
+                      <div className="text-sm font-medium">Source Code</div>
+                      <div className="text-xs text-white/40">View the project on GitHub</div>
+                    </a>
+                  </CardContent>
+                </Card>
               </motion.div>
             )}
 
