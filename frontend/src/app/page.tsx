@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { 
   Shield, Zap, Medal, Trophy, Droplets, Wallet, 
   LayoutDashboard, GitBranch, Award, Settings, 
-  Globe, Bell, ChevronRight, Clock, CheckCircle2
+  Globe, Bell, Clock, CheckCircle2, Target, TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,28 +21,31 @@ import { parseUnits, formatUnits } from 'viem';
 const TASKS = [
   {
     id: 0,
-    title: 'Optimize Gas: L2 Bridging',
-    desc: 'Reduce calldata overhead for rollup submissions.',
+    type: 'Daily',
+    title: 'Bug Fix',
+    desc: 'Fix small bugs and clean up code.',
     reward: '10 Arc Sparks',
-    status: 'High Priority',
+    limit: '2 / day',
     color: 'text-arc-teal',
     border: 'border-l-arc-teal',
   },
   {
     id: 1,
-    title: 'UI: Governance Portal',
-    desc: 'Implement voting visualizer for proposal #42.',
+    type: 'Weekly',
+    title: 'Feature / Refactor',
+    desc: 'Add new features or improve structure.',
     reward: '50 Arc Sparks',
-    status: 'In Progress',
+    limit: '1 / week',
     color: 'text-arc-blue',
     border: 'border-l-arc-blue',
   },
   {
     id: 2,
-    title: 'New Project: Staking Module',
+    type: 'Monthly',
+    title: 'New Project',
     desc: 'Develop a new module or project from scratch.',
     reward: '200 Arc Sparks',
-    status: 'Open',
+    limit: '1 / month',
     color: 'text-arc-purple',
     border: 'border-l-arc-purple',
   },
@@ -53,7 +56,7 @@ export default function Dashboard() {
   const { data: balance } = useBalance({ address });
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
-  const [activeTab, setActiveTab] = useState('build');
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Web3 Hooks
   const { data: scoreData } = useReadContract({
@@ -113,6 +116,8 @@ export default function Dashboard() {
   const score = scoreData ? Number((scoreData as any)[0]) : 0;
   const level = scoreData ? (scoreData as any)[1] : 'Novice';
   const dailyUsed = limits ? Number((limits as any)[0]) : 0;
+  const weeklyUsed = limits ? Number((limits as any)[1]) : 0;
+  const monthlyUsed = limits ? Number((limits as any)[2]) : 0;
 
   // Leaderboard State
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -184,17 +189,16 @@ export default function Dashboard() {
             <span className="font-bold tracking-tight">ARC DISCIPLINE</span>
           </div>
           <nav className="flex items-center gap-6 text-sm">
-            <button onClick={() => setActiveTab('build')} className={`font-medium ${activeTab === 'build' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Build</button>
+            <button onClick={() => setActiveTab('dashboard')} className={`font-medium ${activeTab === 'dashboard' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Dashboard</button>
             <button onClick={() => setActiveTab('tasks')} className={`font-medium ${activeTab === 'tasks' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Tasks</button>
             <button onClick={() => setActiveTab('leaderboard')} className={`font-medium ${activeTab === 'leaderboard' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Leaderboard</button>
-            <button className="text-white/50 hover:text-white font-medium">Governance</button>
           </nav>
         </div>
         
         <div className="flex items-center gap-4">
-          <Globe className="w-4 h-4 text-white/50 cursor-pointer hover:text-white" />
-          <Bell className="w-4 h-4 text-white/50 cursor-pointer hover:text-white" />
-          <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-white/70 hover:text-white">Faucet</a>
+          <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-white/70 hover:text-white flex items-center gap-1">
+            <Droplets className="w-3 h-3" /> Faucet
+          </a>
           <ConnectButton.Custom>
             {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
               const ready = mounted;
@@ -235,7 +239,7 @@ export default function Dashboard() {
               <LayoutDashboard className="w-4 h-4" /> Overview
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
-              <GitBranch className="w-4 h-4" /> Repositories
+              <Trophy className="w-4 h-4" /> Leaderboard
             </button>
             <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
               <Award className="w-4 h-4" /> Rewards
@@ -246,9 +250,14 @@ export default function Dashboard() {
           </nav>
 
           <div className="mt-auto">
-            <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 text-sm">
-              Deploy Contract
-            </Button>
+            <div className="glass rounded-xl p-4 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-white/50">Your Score</span>
+                <Trophy className="w-3 h-3 text-arc-teal" />
+              </div>
+              <div className="text-xl font-bold text-white">{score}</div>
+              <div className="text-xs text-arc-teal">{level}</div>
+            </div>
           </div>
         </aside>
 
@@ -260,7 +269,7 @@ export default function Dashboard() {
               Code. Commit. Earn.
             </h1>
             <p className="text-white/50 max-w-2xl">
-              High-performance contributions for the Arc Protocol. Disciplined execution rewarded in Arc Sparks.
+              Stake USDC, validate GitHub commits, and earn Arc Sparks with every successful task.
             </p>
           </div>
 
@@ -289,7 +298,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-right">
                       <div className={`text-sm font-bold ${task.color}`}>{task.reward}</div>
-                      <div className="text-[10px] text-white/30 uppercase tracking-wider">{task.status}</div>
+                      <div className="text-[10px] text-white/30 uppercase tracking-wider">{task.type}</div>
                     </div>
                   </div>
 
@@ -321,17 +330,17 @@ export default function Dashboard() {
                       }}
                       disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
                     >
-                      {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Submit PR' : 'Approve USDC'}
+                      {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit' : 'Approve USDC'}
                     </Button>
                   </div>
                 </motion.div>
               ))}
             </div>
 
-            {/* Top Architects (Middle - 4 cols) */}
+            {/* Leaderboard (Middle - 4 cols) */}
             <div className="lg:col-span-4">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-white/80">Top Architects</h2>
+                <h2 className="text-sm font-semibold text-white/80">Leaderboard</h2>
               </div>
               <div className="glass rounded-xl p-1 bg-white/[0.02]">
                 {leaderboard.length > 0 ? (
@@ -348,6 +357,7 @@ export default function Dashboard() {
                           <div className="text-xs font-medium text-white group-hover:text-arc-blue transition-colors">
                             {user.address.slice(0, 8)}...
                           </div>
+                          <div className="text-[10px] text-white/30">{user.level}</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -358,68 +368,62 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <div className="p-8 text-center text-white/20 text-sm">
-                    No architects yet.
+                    No users yet.
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Your Vault (Right - 3 cols) */}
+            {/* Stats & Rewards (Right - 3 cols) */}
             <div className="lg:col-span-3 space-y-4">
-              <h2 className="text-sm font-semibold text-white/80 mb-2">Your Vault</h2>
+              <h2 className="text-sm font-semibold text-white/80 mb-2">Your Stats</h2>
               
               <div className="glass rounded-xl p-5 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5">
-                <div className="text-xs text-white/40 mb-1">Claimable Rewards</div>
+                <div className="text-xs text-white/40 mb-1">Arc Sparks</div>
                 <div className="text-3xl font-bold text-white mb-4">
-                  {score} <span className="text-sm font-normal text-white/40">Sparks</span>
+                  {score} <span className="text-sm font-normal text-white/40">/ 1000</span>
+                </div>
+                <div className="w-full bg-white/10 rounded-full h-1.5 mb-4">
+                  <div className="bg-arc-teal h-1.5 rounded-full" style={{ width: `${(score / 1000) * 100}%` }}></div>
                 </div>
                 
                 <Button 
-                  className="w-full bg-arc-blue hover:bg-arc-blue/90 text-white text-sm font-medium h-9"
+                  className="w-full bg-arc-gold/10 hover:bg-arc-gold/20 text-arc-gold border border-arc-gold/30 text-sm font-medium h-9"
                   onClick={handleClaim}
                   disabled={isClaiming || Number(score) < 100}
                 >
-                  {isClaiming ? 'Claiming...' : 'Claim to Wallet'}
+                  {isClaiming ? 'Claiming...' : 'Claim Rewards'}
                 </Button>
                 
                 <div className="flex justify-between mt-4 text-[10px] text-white/30">
-                  <span>Next Batch: 14h</span>
-                  <span>Fee: 0.002 ETH</span>
+                  <span>Min Score: 100</span>
+                  <span>Reward Pool</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
+                  <div className="text-xs text-white/40 mb-1 flex items-center gap-1"><Clock className="w-3 h-3" /> Daily</div>
+                  <div className="text-lg font-bold text-arc-teal">{2 - dailyUsed} <span className="text-xs text-white/30">/ 2</span></div>
+                </div>
+                <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
+                  <div className="text-xs text-white/40 mb-1 flex items-center gap-1"><Target className="w-3 h-3" /> Weekly</div>
+                  <div className="text-lg font-bold text-arc-blue">{1 - weeklyUsed} <span className="text-xs text-white/30">/ 1</span></div>
                 </div>
               </div>
 
               <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
-                <div className="text-xs text-white/40 mb-1">Contribution Rank</div>
-                <div className="text-lg font-bold text-white">
-                  {leaderboard.length > 0 && leaderboard.findIndex(u => u.address === address) !== -1 
-                    ? `Top ${Math.round(((leaderboard.findIndex(u => u.address === address) + 1) / leaderboard.length) * 100)}%` 
-                    : 'Unranked'}
-                </div>
-              </div>
-
-              <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
-                <div className="text-xs text-white/40 mb-1">Streak</div>
-                <div className="text-lg font-bold text-arc-teal">
-                  {dailyUsed > 0 ? 'Active' : 'Start Today'}
-                </div>
+                <div className="text-xs text-white/40 mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Monthly</div>
+                <div className="text-lg font-bold text-arc-purple">{1 - monthlyUsed} <span className="text-xs text-white/30">/ 1</span></div>
               </div>
             </div>
 
-            {/* Coding Consistency (Bottom - Full Width) */}
+            {/* Activity Heatmap (Bottom - Full Width) */}
             <div className="col-span-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-sm font-semibold text-white/80">Coding Consistency</h2>
-                  <p className="text-xs text-white/40">Your contribution history over the last 6 months.</p>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-white/30">
-                  <span>Less</span>
-                  <div className="flex gap-0.5">
-                    <div className="w-2 h-2 rounded-sm bg-white/5" />
-                    <div className="w-2 h-2 rounded-sm bg-arc-blue/30" />
-                    <div className="w-2 h-2 rounded-sm bg-arc-blue" />
-                  </div>
-                  <span>More</span>
+                  <h2 className="text-sm font-semibold text-white/80">Activity Heatmap</h2>
+                  <p className="text-xs text-white/40">Your coding consistency over the last 30 days.</p>
                 </div>
               </div>
               <div className="glass rounded-xl p-6 bg-white/[0.02] border border-white/5">
