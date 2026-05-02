@@ -4,7 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap, Medal, TrendingUp } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -180,7 +180,7 @@ export default function Dashboard() {
   // Add a refresh button or interval if needed, but for now just on mount.
 
   return (
-    <div className="min-h-screen text-white selection:bg-arc-teal/30">
+    <div className="min-h-screen text-white selection:bg-arc-teal/30 grid-bg">
       {/* Navbar */}
       <nav className="sticky top-0 z-50 glass border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -192,9 +192,9 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             {isConnected && (
-              <Badge variant="outline" className="glass text-arc-teal border-arc-teal/30">
-                <Trophy className="w-3 h-3 mr-1" /> {score.toString()} Arc Sparks • {level}
-              </Badge>
+              <div className="pill">
+                <Trophy className="w-3 h-3" /> {score.toString()} pts
+              </div>
             )}
             <ConnectButton />
           </div>
@@ -206,14 +206,53 @@ export default function Dashboard() {
         <motion.section 
           initial={{ opacity: 0, y: 20 }} 
           animate={{ opacity: 1, y: 0 }} 
-          className="text-center space-y-4 py-8"
+          className="text-center space-y-6 py-8"
         >
-          <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/60">
-            Code. Commit. Earn.
+          <div className="pill mx-auto w-fit">
+            <span className="w-2 h-2 rounded-full bg-arc-teal animate-pulse" />
+            Live on Arc Testnet • Season 1 Open
+          </div>
+          
+          <h1 className="text-4xl md:text-6xl font-bold">
+            Code. Commit.{' '}
+            <span className="gradient-text">Earn.</span>
           </h1>
+          
           <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Bring your discipline on-chain. Earn USDC with GitHub commits, boost your score, and claim rewards.
+            Bring your discipline on-chain. Stake USDC, validate GitHub commits, and earn Arc Sparks with every successful task.
           </p>
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto pt-4">
+            <div className="stat-card">
+              <div className="text-2xl font-bold text-arc-teal">Live</div>
+              <div className="text-xs text-white/50 mt-1">On Arc Testnet</div>
+            </div>
+            <div className="stat-card">
+              <div className="text-2xl font-bold text-arc-blue">24h</div>
+              <div className="text-xs text-white/50 mt-1">Auto Deadline</div>
+            </div>
+            <div className="stat-card">
+              <div className="text-2xl font-bold text-arc-purple">S1</div>
+              <div className="text-xs text-white/50 mt-1">Season Open</div>
+            </div>
+          </div>
+
+          {/* Feature Highlights */}
+          <div className="flex flex-wrap justify-center gap-6 pt-2">
+            <div className="feature-item">
+              <CheckCircle2 className="w-4 h-4 text-arc-teal" />
+              <span>AI-Validated Commits</span>
+            </div>
+            <div className="feature-item">
+              <Lock className="w-4 h-4 text-arc-blue" />
+              <span>On-Chain Staking</span>
+            </div>
+            <div className="feature-item">
+              <Award className="w-4 h-4 text-arc-purple" />
+              <span>Reward Pool</span>
+            </div>
+          </div>
         </motion.section>
 
         {/* Task Grid */}

@@ -41,3 +41,26 @@
 .glass {
   @apply bg-arc-card backdrop-blur-md border border-arc-border shadow-lg;
 }
+
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-arc-teal via-arc-blue to-arc-purple;
+}
+
+.pill {
+  @apply inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium glass border-arc-teal/30 text-arc-teal;
+}
+
+.stat-card {
+  @apply glass rounded-2xl p-6 text-center hover:border-arc-teal/30 transition-all duration-300;
+}
+
+.feature-item {
+  @apply flex items-center gap-2 text-sm text-white/60;
+}
