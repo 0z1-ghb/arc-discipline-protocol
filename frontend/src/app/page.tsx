@@ -4,7 +4,11 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet, Droplets, Twitter, Github, ExternalLink } from 'lucide-react';
+import { 
+  Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, 
+  Wallet, Droplets, Twitter, Github, ExternalLink, LayoutDashboard, Users, 
+  Settings, LogOut, ChevronRight, Activity, Target
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -55,6 +59,7 @@ export default function Dashboard() {
   const { data: balance } = useBalance({ address });
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Web3 Hooks
   const { data: scoreData } = useReadContract({
@@ -126,7 +131,6 @@ export default function Dashboard() {
 
     const fetchLeaderboard = async () => {
       try {
-        // 1. Get User Count
         const count = await publicClient.readContract({
           address: CONTRACTS.protocol,
           abi: PROTOCOL_ABI,
@@ -138,8 +142,6 @@ export default function Dashboard() {
 
         const usersData = [];
 
-        // 2. Fetch Data for Each User
-        // Note: In a production app, we'd use multicall3. Here we loop for simplicity.
         for (let i = 0; i < userCount; i++) {
           const userAddress = await publicClient.readContract({
             address: CONTRACTS.protocol,
@@ -170,7 +172,6 @@ export default function Dashboard() {
           });
         }
 
-        // 3. Sort by Score (Arc Sparks) Descending
         usersData.sort((a, b) => b.score - a.score);
         setLeaderboard(usersData);
       } catch (error) {
@@ -181,322 +182,253 @@ export default function Dashboard() {
     fetchLeaderboard();
   }, [publicClient]);
 
-  // Add a refresh button or interval if needed, but for now just on mount.
-
   return (
-    <div className="min-h-screen text-white selection:bg-arc-teal/30 grid-bg">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 glass border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-arc-teal to-arc-blue flex items-center justify-center">
-              <Shield className="w-5 h-5 text-black" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">ARC DISCIPLINE</span>
+    <div className="flex h-screen bg-arc-bg text-white overflow-hidden">
+      {/* Sidebar */}
+      <aside className="w-64 bg-[#020617] border-r border-white/5 flex flex-col hidden md:flex">
+        <div className="p-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-arc-teal to-arc-blue flex items-center justify-center">
+            <Shield className="w-5 h-5 text-black" />
           </div>
-          <div className="flex items-center gap-3">
-            <a 
-              href="https://faucet.circle.com/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="pill bg-arc-blue/10 text-arc-blue border-arc-blue/30 hover:bg-arc-blue/20 transition-colors"
-            >
-              <Droplets className="w-3 h-3" /> Faucet
-            </a>
-            {isConnected && (
-              <div className="relative group">
-                <div className="absolute inset-0 bg-arc-teal/20 rounded-full blur-md group-hover:bg-arc-teal/30 transition-all" />
-                <div className="relative pill bg-arc-teal/10 text-arc-teal border-arc-teal/40 shadow-[0_0_15px_rgba(0,229,153,0.15)]">
-                  <Trophy className="w-3.5 h-3.5" />
-                  <span className="font-bold text-sm">{score.toString()}</span>
-                  <span className="text-xs text-arc-teal/70 ml-0.5">pts</span>
-                </div>
-              </div>
-            )}
-            <ConnectButton.Custom>
-              {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
-                const ready = mounted;
-                const connected = ready && account && chain;
-                return (
-                  <div
-                    {...(!ready ? { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none', userSelect: 'none' } } : {})}
-                  >
-                    {(() => {
-                      if (!connected) {
-                        return (
-                          <button onClick={openConnectModal} className="pill bg-arc-teal/10 text-arc-teal border-arc-teal/30 hover:bg-arc-teal/20 transition-colors">
-                            <Wallet className="w-3 h-3" /> Connect Wallet
-                          </button>
-                        );
-                      }
-                      if (chain.unsupported) {
-                        return (
-                          <button onClick={openChainModal} className="pill bg-red-500/10 text-red-400 border-red-500/30">
-                            Wrong network
-                          </button>
-                        );
-                      }
-                      return (
-                        <button onClick={openAccountModal} className="pill hover:bg-white/10 transition-colors">
-                          {balance && <span className="text-white/80">{parseFloat(balance.formatted).toFixed(2)} USDC</span>}
-                          <span className="w-px h-3 bg-white/20 mx-1" />
-                          <span className="text-white/60">{account.displayName}</span>
-                        </button>
-                      );
-                    })()}
-                  </div>
-                );
-              }}
-            </ConnectButton.Custom>
-          </div>
+          <span className="font-bold text-lg tracking-tight">ARC DISCIPLINE</span>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 auto-rows-min">
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-arc-teal/10 text-arc-teal' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveTab('leaderboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'leaderboard' ? 'bg-arc-teal/10 text-arc-teal' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
+          >
+            <Users className="w-4 h-4" />
+            Leaderboard
+          </button>
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors">
+            <Activity className="w-4 h-4" />
+            Activity
+          </button>
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors">
+            <Settings className="w-4 h-4" />
+            Settings
+          </button>
+        </nav>
+
+        <div className="p-4 border-t border-white/5">
+          <div className="glass rounded-xl p-4 mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-white/50">Your Score</span>
+              <Trophy className="w-3 h-3 text-arc-teal" />
+            </div>
+            <div className="text-xl font-bold text-white">{score}</div>
+            <div className="text-xs text-arc-teal">{level}</div>
+          </div>
           
-          {/* Hero Section - Full Width */}
-          <motion.section 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="col-span-full glass rounded-xl p-8 text-center flex flex-col items-center justify-center relative overflow-hidden"
-          >
-            <div className="absolute inset-0 bg-gradient-to-b from-arc-teal/5 to-transparent pointer-events-none" />
-            <div className="relative z-10 space-y-4">
-              <div className="pill mx-auto w-fit">
-                <span className="w-2 h-2 rounded-full bg-arc-teal animate-pulse" />
-                Live on Arc Testnet
-              </div>
-              
-              <h1 className="text-4xl md:text-5xl font-bold">
-                Code. Commit.{' '}
-                <span className="gradient-text">Earn.</span>
-              </h1>
-              
-              <p className="text-lg text-white/60 max-w-xl mx-auto">
-                Stake USDC, validate GitHub commits, and earn Arc Sparks.
-              </p>
-
-              <div className="flex flex-wrap justify-center gap-4 pt-2">
-                <div className="feature-item">
-                  <CheckCircle2 className="w-4 h-4 text-arc-teal" />
-                  <span>AI-Validated</span>
-                </div>
-                <div className="feature-item">
-                  <Lock className="w-4 h-4 text-arc-blue" />
-                  <span>On-Chain</span>
-                </div>
-                <div className="feature-item">
-                  <Award className="w-4 h-4 text-arc-purple" />
-                  <span>Rewards</span>
-                </div>
-              </div>
-            </div>
-          </motion.section>
-
-          {/* Tasks Column (5 cols) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="col-span-full md:col-span-5 glass rounded-xl p-5 flex flex-col gap-4 max-h-[600px] overflow-y-auto custom-scrollbar"
-          >
-            <h2 className="text-xl font-bold flex items-center gap-2 sticky top-0 bg-[#020617]/80 backdrop-blur-sm py-2 z-10">
-              <Zap className="w-5 h-5 text-arc-teal" /> Active Tasks
-            </h2>
-            <div className="grid grid-cols-1 gap-4">
-              {TASKS.map((task, i) => (
-                <div key={task.id} className={`p-4 rounded-lg border ${task.border} ${task.bg} transition-all hover:brightness-110`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div>
-                      <h3 className={`font-bold ${task.color}`}>{task.title}</h3>
-                      <p className="text-xs text-white/50">{task.type} • Limit: {task.limit}</p>
-                    </div>
-                    <Badge className={`${task.bg} ${task.color} border-0`}>{task.reward}</Badge>
-                  </div>
-                  <p className="text-xs text-white/60 mb-3">{task.desc}</p>
-                  
-                  <div className="grid grid-cols-2 gap-2 mb-2">
-                    <Input 
-                      placeholder="GitHub Username" 
-                      className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
-                      value={githubs[task.id]}
-                      onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
-                    />
-                    <Input 
-                      type="number" 
-                      placeholder="Amount (USDC)" 
-                      className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
-                      value={amounts[task.id]}
-                      onChange={(e) => setAmounts({...amounts, [task.id]: e.target.value})}
-                    />
-                  </div>
-
-                  <Button 
-                    size="sm"
-                    className={`w-full h-8 text-xs ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
-                    onClick={() => {
-                      if (approvingType === task.id && isApproved) {
-                        handleDeposit(task.id);
-                      } else {
-                        handleApprove(task.id);
-                      }
-                    }}
-                    disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
-                  >
-                    {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit' : 'Approve USDC'}
-                  </Button>
-                  {isDeposited && approvingType === task.id && <p className="text-arc-teal text-[10px] text-center mt-1">Success!</p>}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Leaderboard Column (4 cols) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="col-span-full md:col-span-4 glass rounded-xl p-5 flex flex-col h-[600px]"
-          >
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-              <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
-            </h2>
-            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-              {leaderboard.length > 0 ? (
-                leaderboard.map((user, index) => (
-                  <div key={user.address} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-white/40 w-6">
-                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                      </span>
-                      <div>
-                        <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
-                        <div className="text-[10px] text-white/40">{user.level}</div>
+          <ConnectButton.Custom>
+            {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+              const ready = mounted;
+              const connected = ready && account && chain;
+              return (
+                <div {...(!ready ? { 'aria-hidden': true, style: { opacity: 0 } } : {})}>
+                  {connected ? (
+                    <button onClick={openAccountModal} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-arc-blue to-arc-purple flex items-center justify-center text-xs font-bold">
+                        {account.displayName?.charAt(0)}
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-arc-teal">{user.score}</div>
-                      <div className="text-[10px] text-white/40">{user.deposited.toFixed(1)} USDC</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-white/30">
-                  <Trophy className="w-8 h-8 mb-2" />
-                  <p className="text-xs">No users yet</p>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{account.displayName}</div>
+                        <div className="text-xs text-white/50 truncate">{balance ? `${parseFloat(balance.formatted).toFixed(2)} USDC` : ''}</div>
+                      </div>
+                    </button>
+                  ) : (
+                    <button onClick={openConnectModal} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-arc-teal text-black font-medium text-sm hover:bg-arc-teal/90 transition-colors">
+                      <Wallet className="w-4 h-4" />
+                      Connect
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          </motion.div>
+              );
+            }}
+          </ConnectButton.Custom>
+        </div>
+      </aside>
 
-          {/* Sidebar Column (3 cols) - Stats + Reward */}
-          <div className="col-span-full md:col-span-3 flex flex-col gap-4">
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="glass rounded-xl p-5 flex flex-col justify-between flex-1"
-            >
-              <div>
-                <h2 className="text-base font-bold flex items-center gap-2 mb-3">
-                  <TrendingUp className="w-4 h-4 text-arc-blue" /> Stats
-                </h2>
-                <div className="grid grid-cols-3 gap-2 text-center mb-3">
-                  <div className="p-1.5 rounded bg-white/5">
-                    <div className="text-base font-bold text-arc-teal">{2 - dailyUsed}</div>
-                    <div className="text-[9px] text-white/50">Daily</div>
-                  </div>
-                  <div className="p-1.5 rounded bg-white/5">
-                    <div className="text-base font-bold text-arc-blue">{1 - weeklyUsed}</div>
-                    <div className="text-[9px] text-white/50">Weekly</div>
-                  </div>
-                  <div className="p-1.5 rounded bg-white/5">
-                    <div className="text-base font-bold text-arc-purple">{1 - monthlyUsed}</div>
-                    <div className="text-[9px] text-white/50">Monthly</div>
-                  </div>
-                </div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        {/* Top Header */}
+        <header className="sticky top-0 z-40 bg-arc-bg/80 backdrop-blur-md border-b border-white/5 px-8 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Dashboard</h1>
+            <p className="text-sm text-white/50">Welcome back, developer.</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-arc-blue/10 text-arc-blue border border-arc-blue/30 text-sm hover:bg-arc-blue/20 transition-colors">
+              <Droplets className="w-3.5 h-3.5" /> Faucet
+            </a>
+          </div>
+        </header>
+
+        <div className="p-8 space-y-8">
+          {/* Stats Row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 border-l-4 border-arc-teal">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/60">Arc Sparks</span>
+                <Trophy className="w-4 h-4 text-arc-teal" />
               </div>
-              
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[10px] text-white/60">
-                  <span>Progress</span>
-                  <span>{score.toString()} / 1000</span>
-                </div>
-                <Progress value={(Number(score) / 1000) * 100} className="h-1 bg-white/10" />
+              <div className="text-3xl font-bold">{score}</div>
+              <div className="text-xs text-white/40 mt-1">Level: {level}</div>
+            </motion.div>
+            
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-xl p-6 border-l-4 border-arc-blue">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/60">Daily Tasks</span>
+                <CheckCircle2 className="w-4 h-4 text-arc-blue" />
               </div>
+              <div className="text-3xl font-bold">{2 - dailyUsed} <span className="text-lg text-white/40">/ 2</span></div>
+              <div className="text-xs text-white/40 mt-1">Remaining today</div>
             </motion.div>
 
-            {/* Reward Pool - Compact */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="glass rounded-xl p-4 flex flex-col justify-center items-center text-center border-arc-gold/20"
-            >
-              <Award className="w-5 h-5 text-arc-gold mb-1.5" />
-              <h3 className="text-sm font-bold text-arc-gold mb-0.5">Reward Pool</h3>
-              <p className="text-[10px] text-white/50 mb-2">Score {'>'} 100</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass rounded-xl p-6 border-l-4 border-arc-purple">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/60">Weekly Tasks</span>
+                <Target className="w-4 h-4 text-arc-purple" />
+              </div>
+              <div className="text-3xl font-bold">{1 - weeklyUsed} <span className="text-lg text-white/40">/ 1</span></div>
+              <div className="text-xs text-white/40 mt-1">Remaining this week</div>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass rounded-xl p-6 border-l-4 border-arc-gold">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-white/60">Reward Pool</span>
+                <Award className="w-4 h-4 text-arc-gold" />
+              </div>
+              <div className="text-3xl font-bold">Claim</div>
               <Button 
                 size="sm"
-                className="w-full bg-arc-gold/10 text-arc-gold hover:bg-arc-gold/20 border border-arc-gold/30 font-bold text-[10px] h-7"
+                className="mt-2 w-full bg-arc-gold/10 text-arc-gold hover:bg-arc-gold/20 border border-arc-gold/30 text-xs h-7"
                 onClick={handleClaim}
                 disabled={isClaiming || Number(score) < 100}
               >
-                {isClaiming ? 'Claiming...' : 'Claim'}
+                {isClaiming ? 'Claiming...' : 'Claim Rewards'}
               </Button>
-              {isClaimed && <p className="text-arc-teal text-[9px] mt-1.5">Claimed!</p>}
             </motion.div>
           </div>
 
-          {/* Heatmap - Full Width Bottom */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="col-span-full"
-          >
-            <Heatmap score={Number(score)} />
-          </motion.div>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column: Tasks & Heatmap */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Active Tasks */}
+              <Card className="glass border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-arc-teal" /> Active Tasks
+                  </CardTitle>
+                  <CardDescription>Stake USDC and commit code to earn rewards.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {TASKS.map((task, i) => (
+                    <div key={task.id} className={`p-4 rounded-xl border ${task.border} ${task.bg} transition-all hover:brightness-110`}>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3 className={`font-bold text-lg ${task.color}`}>{task.title}</h3>
+                            <Badge className={`${task.bg} ${task.color} border-0`}>{task.reward}</Badge>
+                          </div>
+                          <p className="text-sm text-white/60 mb-2">{task.desc}</p>
+                          <div className="flex items-center gap-4 text-xs text-white/40">
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {task.limit}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2 w-full md:w-64">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input 
+                              placeholder="GitHub User" 
+                              className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
+                              value={githubs[task.id]}
+                              onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
+                            />
+                            <Input 
+                              type="number" 
+                              placeholder="USDC" 
+                              className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
+                              value={amounts[task.id]}
+                              onChange={(e) => setAmounts({...amounts, [task.id]: e.target.value})}
+                            />
+                          </div>
+                          <Button 
+                            size="sm"
+                            className={`w-full h-8 text-xs ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
+                            onClick={() => {
+                              if (approvingType === task.id && isApproved) {
+                                handleDeposit(task.id);
+                              } else {
+                                handleApprove(task.id);
+                              }
+                            }}
+                            disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
+                          >
+                            {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit' : 'Approve USDC'}
+                          </Button>
+                          {isDeposited && approvingType === task.id && <p className="text-arc-teal text-[10px] text-center">Success!</p>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
+              {/* Heatmap */}
+              <Heatmap score={Number(score)} />
+            </div>
+
+            {/* Right Column: Leaderboard */}
+            <div className="lg:col-span-1">
+              <Card className="glass border-0 h-full flex flex-col">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
+                  </CardTitle>
+                  <CardDescription>Top developers ranked by Arc Sparks.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                  {leaderboard.length > 0 ? (
+                    leaderboard.map((user, index) => (
+                      <div key={user.address} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-bold text-white/40 w-6 text-center">
+                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                          </span>
+                          <div>
+                            <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
+                            <div className="text-[10px] text-white/40">{user.level}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm font-bold text-arc-teal">{user.score}</div>
+                          <div className="text-[10px] text-white/40">{user.deposited.toFixed(1)} USDC</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-48 text-white/30">
+                      <Users className="w-10 h-10 mb-3" />
+                      <p className="text-sm">No users yet</p>
+                      <p className="text-xs mt-1">Be the first to deposit!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-white/5 mt-12">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-arc-teal to-arc-blue flex items-center justify-center">
-              <Shield className="w-3 h-3 text-black" />
-            </div>
-            <div className="text-sm text-white/60">
-              <span className="font-medium text-white">Arc Discipline</span>
-              <span className="mx-2">•</span>
-              © 2026 • Build on Arc
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <a href="https://docs.arc.network/" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1">
-              Docs <ExternalLink className="w-3 h-3" />
-            </a>
-            <a href="https://github.com/0z1-ghb/arc-discipline-protocol" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1">
-              Audit <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <a href="https://x.com/0z1_x" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white transition-colors">
-              <Twitter className="w-4 h-4" />
-            </a>
-            <a href="https://github.com/0z1-ghb" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white transition-colors">
-              <Github className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
