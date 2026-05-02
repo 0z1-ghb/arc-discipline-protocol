@@ -5,12 +5,12 @@ import { useAccount, useReadContract, useWriteContract, useWaitForTransactionRec
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, 
-  Wallet, Droplets, Twitter, Github, ExternalLink, LayoutDashboard, Users, 
-  Settings, LogOut, ChevronRight, Activity, Target
+  Shield, Zap, Medal, Trophy, Droplets, Wallet, 
+  LayoutDashboard, GitBranch, Award, Settings, 
+  Globe, Bell, ChevronRight, Clock, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -21,36 +21,30 @@ import { parseUnits, formatUnits } from 'viem';
 const TASKS = [
   {
     id: 0,
-    type: 'Daily',
-    title: 'Bug Fix',
-    desc: 'Fix small bugs and clean up code.',
+    title: 'Optimize Gas: L2 Bridging',
+    desc: 'Reduce calldata overhead for rollup submissions.',
     reward: '10 Arc Sparks',
-    limit: '2 / day',
+    status: 'High Priority',
     color: 'text-arc-teal',
-    border: 'border-arc-teal/30',
-    bg: 'bg-arc-teal/5',
+    border: 'border-l-arc-teal',
   },
   {
     id: 1,
-    type: 'Weekly',
-    title: 'Feature / Refactor',
-    desc: 'Add new features or improve structure.',
+    title: 'UI: Governance Portal',
+    desc: 'Implement voting visualizer for proposal #42.',
     reward: '50 Arc Sparks',
-    limit: '1 / week',
+    status: 'In Progress',
     color: 'text-arc-blue',
-    border: 'border-arc-blue/30',
-    bg: 'bg-arc-blue/5',
+    border: 'border-l-arc-blue',
   },
   {
     id: 2,
-    type: 'Monthly',
-    title: 'New Project',
+    title: 'New Project: Staking Module',
     desc: 'Develop a new module or project from scratch.',
     reward: '200 Arc Sparks',
-    limit: '1 / month',
+    status: 'Open',
     color: 'text-arc-purple',
-    border: 'border-arc-purple/30',
-    bg: 'bg-arc-purple/5',
+    border: 'border-l-arc-purple',
   },
 ];
 
@@ -59,7 +53,7 @@ export default function Dashboard() {
   const { data: balance } = useBalance({ address });
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('build');
 
   // Web3 Hooks
   const { data: scoreData } = useReadContract({
@@ -119,8 +113,6 @@ export default function Dashboard() {
   const score = scoreData ? Number((scoreData as any)[0]) : 0;
   const level = scoreData ? (scoreData as any)[1] : 'Novice';
   const dailyUsed = limits ? Number((limits as any)[0]) : 0;
-  const weeklyUsed = limits ? Number((limits as any)[1]) : 0;
-  const monthlyUsed = limits ? Number((limits as any)[2]) : 0;
 
   // Leaderboard State
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -183,51 +175,26 @@ export default function Dashboard() {
   }, [publicClient]);
 
   return (
-    <div className="flex h-screen bg-arc-bg text-white overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#020617] border-r border-white/5 flex flex-col hidden md:flex">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-arc-teal to-arc-blue flex items-center justify-center">
-            <Shield className="w-5 h-5 text-black" />
+    <div className="flex flex-col h-screen bg-[#09090b] text-white overflow-hidden font-sans">
+      {/* Top Navbar */}
+      <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-[#09090b]">
+        <div className="flex items-center gap-8">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-white" />
+            <span className="font-bold tracking-tight">ARC DISCIPLINE</span>
           </div>
-          <span className="font-bold text-lg tracking-tight">ARC DISCIPLINE</span>
+          <nav className="flex items-center gap-6 text-sm">
+            <button onClick={() => setActiveTab('build')} className={`font-medium ${activeTab === 'build' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Build</button>
+            <button onClick={() => setActiveTab('tasks')} className={`font-medium ${activeTab === 'tasks' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Tasks</button>
+            <button onClick={() => setActiveTab('leaderboard')} className={`font-medium ${activeTab === 'leaderboard' ? 'text-arc-blue border-b-2 border-arc-blue pb-4 mt-4' : 'text-white/50 hover:text-white'}`}>Leaderboard</button>
+            <button className="text-white/50 hover:text-white font-medium">Governance</button>
+          </nav>
         </div>
-
-        <nav className="flex-1 px-4 space-y-2 mt-4">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'dashboard' ? 'bg-arc-teal/10 text-arc-teal' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Dashboard
-          </button>
-          <button 
-            onClick={() => setActiveTab('leaderboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === 'leaderboard' ? 'bg-arc-teal/10 text-arc-teal' : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
-          >
-            <Users className="w-4 h-4" />
-            Leaderboard
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors">
-            <Activity className="w-4 h-4" />
-            Activity
-          </button>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-white/60 hover:bg-white/5 hover:text-white transition-colors">
-            <Settings className="w-4 h-4" />
-            Settings
-          </button>
-        </nav>
-
-        <div className="p-4 border-t border-white/5">
-          <div className="glass rounded-xl p-4 mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-white/50">Your Score</span>
-              <Trophy className="w-3 h-3 text-arc-teal" />
-            </div>
-            <div className="text-xl font-bold text-white">{score}</div>
-            <div className="text-xs text-arc-teal">{level}</div>
-          </div>
-          
+        
+        <div className="flex items-center gap-4">
+          <Globe className="w-4 h-4 text-white/50 cursor-pointer hover:text-white" />
+          <Bell className="w-4 h-4 text-white/50 cursor-pointer hover:text-white" />
+          <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="text-xs text-white/70 hover:text-white">Faucet</a>
           <ConnectButton.Custom>
             {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
               const ready = mounted;
@@ -235,19 +202,12 @@ export default function Dashboard() {
               return (
                 <div {...(!ready ? { 'aria-hidden': true, style: { opacity: 0 } } : {})}>
                   {connected ? (
-                    <button onClick={openAccountModal} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-left">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-arc-blue to-arc-purple flex items-center justify-center text-xs font-bold">
-                        {account.displayName?.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{account.displayName}</div>
-                        <div className="text-xs text-white/50 truncate">{balance ? `${parseFloat(balance.formatted).toFixed(2)} USDC` : ''}</div>
-                      </div>
+                    <button onClick={openAccountModal} className="px-3 py-1.5 rounded bg-white/5 text-xs hover:bg-white/10 transition">
+                      {account.displayName}
                     </button>
                   ) : (
-                    <button onClick={openConnectModal} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-arc-teal text-black font-medium text-sm hover:bg-arc-teal/90 transition-colors">
-                      <Wallet className="w-4 h-4" />
-                      Connect
+                    <button onClick={openConnectModal} className="px-3 py-1.5 rounded bg-arc-blue/20 text-arc-blue text-xs font-medium hover:bg-arc-blue/30 transition">
+                      Connect Wallet
                     </button>
                   )}
                 </div>
@@ -255,180 +215,221 @@ export default function Dashboard() {
             }}
           </ConnectButton.Custom>
         </div>
-      </aside>
+      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Top Header */}
-        <header className="sticky top-0 z-40 bg-arc-bg/80 backdrop-blur-md border-b border-white/5 px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Dashboard</h1>
-            <p className="text-sm text-white/50">Welcome back, developer.</p>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        <aside className="w-64 border-r border-white/5 bg-[#09090b] p-4 flex flex-col gap-6 hidden lg:flex">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-arc-blue to-arc-purple flex items-center justify-center text-xs font-bold">
+              {address ? address.slice(2, 4) : 'AD'}
+            </div>
+            <div>
+              <div className="text-sm font-medium">ARC DEVELOPER</div>
+              <div className="text-[10px] text-white/40">Arc Testnet Active</div>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-arc-blue/10 text-arc-blue border border-arc-blue/30 text-sm hover:bg-arc-blue/20 transition-colors">
-              <Droplets className="w-3.5 h-3.5" /> Faucet
-            </a>
-          </div>
-        </header>
 
-        <div className="p-8 space-y-8">
-          {/* Stats Row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 border-l-4 border-arc-teal">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Arc Sparks</span>
-                <Trophy className="w-4 h-4 text-arc-teal" />
-              </div>
-              <div className="text-3xl font-bold">{score}</div>
-              <div className="text-xs text-white/40 mt-1">Level: {level}</div>
-            </motion.div>
+          <nav className="space-y-1">
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-arc-blue/10 text-arc-blue text-sm font-medium">
+              <LayoutDashboard className="w-4 h-4" /> Overview
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
+              <GitBranch className="w-4 h-4" /> Repositories
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
+              <Award className="w-4 h-4" /> Rewards
+            </button>
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-white/50 hover:bg-white/5 hover:text-white text-sm transition">
+              <Settings className="w-4 h-4" /> Settings
+            </button>
+          </nav>
+
+          <div className="mt-auto">
+            <Button className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 text-sm">
+              Deploy Contract
+            </Button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto p-8">
+          {/* Header Section */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-arc-blue">
+              Code. Commit. Earn.
+            </h1>
+            <p className="text-white/50 max-w-2xl">
+              High-performance contributions for the Arc Protocol. Disciplined execution rewarded in Arc Sparks.
+            </p>
+          </div>
+
+          {/* Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="glass rounded-xl p-6 border-l-4 border-arc-blue">
+            {/* Active Tasks (Left - 5 cols) */}
+            <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Daily Tasks</span>
-                <CheckCircle2 className="w-4 h-4 text-arc-blue" />
+                <h2 className="text-sm font-semibold text-white/80">Active Tasks</h2>
+                <Badge variant="outline" className="bg-arc-blue/10 text-arc-blue border-arc-blue/20 text-[10px]">3 Available</Badge>
               </div>
-              <div className="text-3xl font-bold">{2 - dailyUsed} <span className="text-lg text-white/40">/ 2</span></div>
-              <div className="text-xs text-white/40 mt-1">Remaining today</div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass rounded-xl p-6 border-l-4 border-arc-purple">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Weekly Tasks</span>
-                <Target className="w-4 h-4 text-arc-purple" />
-              </div>
-              <div className="text-3xl font-bold">{1 - weeklyUsed} <span className="text-lg text-white/40">/ 1</span></div>
-              <div className="text-xs text-white/40 mt-1">Remaining this week</div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass rounded-xl p-6 border-l-4 border-arc-gold">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-white/60">Reward Pool</span>
-                <Award className="w-4 h-4 text-arc-gold" />
-              </div>
-              <div className="text-3xl font-bold">Claim</div>
-              <Button 
-                size="sm"
-                className="mt-2 w-full bg-arc-gold/10 text-arc-gold hover:bg-arc-gold/20 border border-arc-gold/30 text-xs h-7"
-                onClick={handleClaim}
-                disabled={isClaiming || Number(score) < 100}
-              >
-                {isClaiming ? 'Claiming...' : 'Claim Rewards'}
-              </Button>
-            </motion.div>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column: Tasks & Heatmap */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Active Tasks */}
-              <Card className="glass border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-arc-teal" /> Active Tasks
-                  </CardTitle>
-                  <CardDescription>Stake USDC and commit code to earn rewards.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {TASKS.map((task, i) => (
-                    <div key={task.id} className={`p-4 rounded-xl border ${task.border} ${task.bg} transition-all hover:brightness-110`}>
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className={`font-bold text-lg ${task.color}`}>{task.title}</h3>
-                            <Badge className={`${task.bg} ${task.color} border-0`}>{task.reward}</Badge>
-                          </div>
-                          <p className="text-sm text-white/60 mb-2">{task.desc}</p>
-                          <div className="flex items-center gap-4 text-xs text-white/40">
-                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {task.limit}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-col gap-2 w-full md:w-64">
-                          <div className="grid grid-cols-2 gap-2">
-                            <Input 
-                              placeholder="GitHub User" 
-                              className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
-                              value={githubs[task.id]}
-                              onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
-                            />
-                            <Input 
-                              type="number" 
-                              placeholder="USDC" 
-                              className="glass border-white/10 text-xs text-white placeholder:text-white/30 h-8"
-                              value={amounts[task.id]}
-                              onChange={(e) => setAmounts({...amounts, [task.id]: e.target.value})}
-                            />
-                          </div>
-                          <Button 
-                            size="sm"
-                            className={`w-full h-8 text-xs ${task.bg} ${task.color} hover:brightness-110 border ${task.border}`}
-                            onClick={() => {
-                              if (approvingType === task.id && isApproved) {
-                                handleDeposit(task.id);
-                              } else {
-                                handleApprove(task.id);
-                              }
-                            }}
-                            disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
-                          >
-                            {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit' : 'Approve USDC'}
-                          </Button>
-                          {isDeposited && approvingType === task.id && <p className="text-arc-teal text-[10px] text-center">Success!</p>}
-                        </div>
-                      </div>
+              
+              {TASKS.map((task, i) => (
+                <motion.div 
+                  key={task.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`glass rounded-xl p-5 border-l-4 ${task.border} bg-white/[0.02] hover:bg-white/[0.04] transition-all group`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="font-bold text-white group-hover:text-arc-blue transition-colors">{task.title}</h3>
+                      <p className="text-xs text-white/40 mt-1">{task.desc}</p>
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
+                    <div className="text-right">
+                      <div className={`text-sm font-bold ${task.color}`}>{task.reward}</div>
+                      <div className="text-[10px] text-white/30 uppercase tracking-wider">{task.status}</div>
+                    </div>
+                  </div>
 
-              {/* Heatmap */}
-              <Heatmap score={Number(score)} />
+                  <div className="space-y-2 mt-4 pt-4 border-t border-white/5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input 
+                        placeholder="GitHub User" 
+                        className="bg-black/20 border-white/10 text-xs text-white placeholder:text-white/20 h-8 focus-visible:ring-arc-blue"
+                        value={githubs[task.id]}
+                        onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
+                      />
+                      <Input 
+                        type="number" 
+                        placeholder="USDC" 
+                        className="bg-black/20 border-white/10 text-xs text-white placeholder:text-white/20 h-8 focus-visible:ring-arc-blue"
+                        value={amounts[task.id]}
+                        onChange={(e) => setAmounts({...amounts, [task.id]: e.target.value})}
+                      />
+                    </div>
+                    <Button 
+                      size="sm"
+                      className="w-full h-8 text-xs bg-white/5 hover:bg-white/10 text-white border border-white/10"
+                      onClick={() => {
+                        if (approvingType === task.id && isApproved) {
+                          handleDeposit(task.id);
+                        } else {
+                          handleApprove(task.id);
+                        }
+                      }}
+                      disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
+                    >
+                      {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Submit PR' : 'Approve USDC'}
+                    </Button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
 
-            {/* Right Column: Leaderboard */}
-            <div className="lg:col-span-1">
-              <Card className="glass border-0 h-full flex flex-col">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2">
-                    <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
-                  </CardTitle>
-                  <CardDescription>Top developers ranked by Arc Sparks.</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                  {leaderboard.length > 0 ? (
-                    leaderboard.map((user, index) => (
-                      <div key={user.address} className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/5">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold text-white/40 w-6 text-center">
-                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
-                          </span>
-                          <div>
-                            <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
-                            <div className="text-[10px] text-white/40">{user.level}</div>
+            {/* Top Architects (Middle - 4 cols) */}
+            <div className="lg:col-span-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-semibold text-white/80">Top Architects</h2>
+              </div>
+              <div className="glass rounded-xl p-1 bg-white/[0.02]">
+                {leaderboard.length > 0 ? (
+                  leaderboard.slice(0, 5).map((user, index) => (
+                    <div key={user.address} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors group">
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs font-bold w-5 ${index === 0 ? 'text-arc-gold' : 'text-white/30'}`}>
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-[10px]">
+                          {user.address.slice(2, 4)}
+                        </div>
+                        <div>
+                          <div className="text-xs font-medium text-white group-hover:text-arc-blue transition-colors">
+                            {user.address.slice(0, 8)}...
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-arc-teal">{user.score}</div>
-                          <div className="text-[10px] text-white/40">{user.deposited.toFixed(1)} USDC</div>
-                        </div>
                       </div>
-                    ))
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-48 text-white/30">
-                      <Users className="w-10 h-10 mb-3" />
-                      <p className="text-sm">No users yet</p>
-                      <p className="text-xs mt-1">Be the first to deposit!</p>
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-white">{user.score.toLocaleString()}</div>
+                        <div className="text-[10px] text-white/30">Sparks</div>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-white/20 text-sm">
+                    No architects yet.
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Your Vault (Right - 3 cols) */}
+            <div className="lg:col-span-3 space-y-4">
+              <h2 className="text-sm font-semibold text-white/80 mb-2">Your Vault</h2>
+              
+              <div className="glass rounded-xl p-5 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/5">
+                <div className="text-xs text-white/40 mb-1">Claimable Rewards</div>
+                <div className="text-3xl font-bold text-white mb-4">
+                  {score} <span className="text-sm font-normal text-white/40">Sparks</span>
+                </div>
+                
+                <Button 
+                  className="w-full bg-arc-blue hover:bg-arc-blue/90 text-white text-sm font-medium h-9"
+                  onClick={handleClaim}
+                  disabled={isClaiming || Number(score) < 100}
+                >
+                  {isClaiming ? 'Claiming...' : 'Claim to Wallet'}
+                </Button>
+                
+                <div className="flex justify-between mt-4 text-[10px] text-white/30">
+                  <span>Next Batch: 14h</span>
+                  <span>Fee: 0.002 ETH</span>
+                </div>
+              </div>
+
+              <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
+                <div className="text-xs text-white/40 mb-1">Contribution Rank</div>
+                <div className="text-lg font-bold text-white">
+                  {leaderboard.length > 0 && leaderboard.findIndex(u => u.address === address) !== -1 
+                    ? `Top ${Math.round(((leaderboard.findIndex(u => u.address === address) + 1) / leaderboard.length) * 100)}%` 
+                    : 'Unranked'}
+                </div>
+              </div>
+
+              <div className="glass rounded-xl p-4 bg-white/[0.02] border border-white/5">
+                <div className="text-xs text-white/40 mb-1">Streak</div>
+                <div className="text-lg font-bold text-arc-teal">
+                  {dailyUsed > 0 ? 'Active' : 'Start Today'}
+                </div>
+              </div>
+            </div>
+
+            {/* Coding Consistency (Bottom - Full Width) */}
+            <div className="col-span-full">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-white/80">Coding Consistency</h2>
+                  <p className="text-xs text-white/40">Your contribution history over the last 6 months.</p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-white/30">
+                  <span>Less</span>
+                  <div className="flex gap-0.5">
+                    <div className="w-2 h-2 rounded-sm bg-white/5" />
+                    <div className="w-2 h-2 rounded-sm bg-arc-blue/30" />
+                    <div className="w-2 h-2 rounded-sm bg-arc-blue" />
+                  </div>
+                  <span>More</span>
+                </div>
+              </div>
+              <div className="glass rounded-xl p-6 bg-white/[0.02] border border-white/5">
+                <Heatmap score={Number(score)} />
+              </div>
+            </div>
+
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
