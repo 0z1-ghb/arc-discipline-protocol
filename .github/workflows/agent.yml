@@ -26,7 +26,7 @@ jobs:
       - name: Run Validator Agent
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
           RPC_URL: ${{ secrets.RPC_URL }}
           CONTRACT_ADDRESS: ${{ secrets.CONTRACT_ADDRESS }}
           OFFLINE_MODE: ${{ secrets.OFFLINE_MODE }}
