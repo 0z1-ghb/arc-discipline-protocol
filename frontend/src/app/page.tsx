@@ -18,9 +18,9 @@ const TASKS = [
     id: 0,
     type: 'Daily',
     title: 'Bug Fix',
-    desc: 'Küçük hataları düzelt, kodu temizle.',
+    desc: 'Fix small bugs and clean up code.',
     reward: '10 Pts',
-    limit: '2 / gün',
+    limit: '2 / day',
     color: 'text-arc-teal',
     border: 'border-arc-teal/30',
     bg: 'bg-arc-teal/5',
@@ -30,9 +30,9 @@ const TASKS = [
     id: 1,
     type: 'Weekly',
     title: 'Feature / Refactor',
-    desc: 'Yeni özellik ekle veya yapıyı iyileştir.',
+    desc: 'Add new features or improve structure.',
     reward: '50 Pts',
-    limit: '1 / hafta',
+    limit: '1 / week',
     color: 'text-arc-blue',
     border: 'border-arc-blue/30',
     bg: 'bg-arc-blue/5',
@@ -42,9 +42,9 @@ const TASKS = [
     id: 2,
     type: 'Monthly',
     title: 'New Project',
-    desc: 'Sıfırdan bir modül veya proje geliştir.',
+    desc: 'Develop a new module or project from scratch.',
     reward: '200 Pts',
-    limit: '1 / ay',
+    limit: '1 / month',
     color: 'text-arc-purple',
     border: 'border-arc-purple/30',
     bg: 'bg-arc-purple/5',
@@ -132,7 +132,7 @@ export default function Dashboard() {
             Code. Commit. Earn.
           </h1>
           <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Disiplinini blockchain'e taşı. GitHub commitlerinle USDC kazan, skorunu yükselt, ödülünü al.
+            Bring your discipline on-chain. Earn USDC with GitHub commits, boost your score, and claim rewards.
           </p>
         </motion.section>
 
@@ -252,7 +252,7 @@ export default function Dashboard() {
           <Card className="glass max-w-2xl mx-auto border-arc-gold/20">
             <CardContent className="py-8 space-y-4">
               <h3 className="text-2xl font-bold text-arc-gold">Reward Pool</h3>
-              <p className="text-white/60">Skorun 100'ün üzerindeyse havuzdan ödülünü talep et.</p>
+              <p className="text-white/60">Claim rewards from the pool if your score is above 100.</p>
               <Button 
                 size="lg" 
                 className="bg-arc-gold text-black hover:bg-arc-gold/90 font-bold px-8"
@@ -261,7 +261,7 @@ export default function Dashboard() {
               >
                 {isClaiming ? 'Claiming...' : 'Claim Rewards'}
               </Button>
-              {isClaimed && <p className="text-arc-teal text-sm">Ödül başarıyla alındı!</p>}
+              {isClaimed && <p className="text-arc-teal text-sm">Reward claimed successfully!</p>}
             </CardContent>
           </Card>
         </section>
