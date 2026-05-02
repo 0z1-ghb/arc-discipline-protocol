@@ -1,61 +1,55 @@
 # Arc Discipline Protocol
 
-On-chain discipline tracker built on **Arc Network**. Stake USDC, validate GitHub commits via AI, earn **Arc Sparks**, and climb the global Leaderboard.
+On-chain discipline tracker built on **Arc Network**. Users stake USDC against coding goals, an AI agent validates GitHub commits, and successful developers earn **Arc Sparks** while failures fund a community Reward Pool.
 
-🌐 **Live Demo:** [arc-discipline.vercel.app](https://arc-discipline.vercel.app) (Replace with actual URL)
+## How It Works
 
-## Concept
+1. **Stake:** User locks USDC and selects a task type (Daily, Weekly, Monthly).
+2. **Commit:** User pushes code to GitHub within the 24-hour deadline.
+3. **Validate:** AI Agent checks commit quality, keywords, and timestamps.
+4. **Reward:** Valid commits refund USDC + award Arc Sparks. Failed stakes go to the Reward Pool.
 
-Users lock USDC into a smart contract for a personal coding goal. An **AI Agent** monitors progress via **GitHub commits**. If the goal is met (quality commit detected), funds are refunded and the user earns **Arc Sparks** on-chain. Failed stakes fund a **Reward Pool** for top performers.
+## Core Features
 
-## Key Features
+### Task System
+- **Daily (Bug Fixes):** 10 Arc Sparks (Max 2/day)
+- **Weekly (Features/Refactors):** 50 Arc Sparks (Max 1/week)
+- **Monthly (New Projects):** 200 Arc Sparks (Max 1/month)
 
-### 1. Task Categories & Scoring
-Users choose a task category when depositing. Points are awarded based on difficulty:
-- **Daily (Bug Fixes):** 10 Arc Sparks (Max 2 per day)
-- **Weekly (Features/Refactors):** 50 Arc Sparks (Max 1 per week)
-- **Monthly (New Development):** 200 Arc Sparks (Max 1 per month)
+### AI Quality Filter
+Prevents spam by validating:
+- File extensions (`.py`, `.js`, `.ts`, `.sol`, etc.)
+- Programming keywords (`function`, `import`, `class`, etc.)
+- Task-type matching (e.g., "fix:" for Daily tasks)
+- Timestamps (commits must be newer than the stake)
 
-### 2. AI Quality Filter (Anti-Spam)
-The agent uses a rule-based filter to ensure only real code contributions are rewarded:
-- **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted.
-- **Keywords:** Commits must contain programming keywords (`function`, `import`, `def`, `class`, etc.).
-- **Task Matching:** Commit messages must match the task type (e.g., "fix:" for Daily tasks).
+### Reputation & Leaderboard
+- **Score Scale:** 0–1000 Arc Sparks
+- **Levels:** Novice → Disciplined → Elite → Legend
+- **Global Ranking:** On-chain leaderboard sorted by score
 
-### 3. On-Chain Leaderboard
-- **Global Ranking:** Real-time ranking of all users based on Arc Sparks.
-- **Reputation Levels:** Novice → Disciplined → Elite → Legend (0-1000 scale).
-- **Transparency:** All scores and deposits are stored on-chain.
-
-### 4. Reward Pool (Survivor Model)
-- **Penalties Fund Rewards:** Failed stakes are sent to the `RewardPool` contract.
-- **Score-Based Claims:** Users with Arc Sparks >= 100 can claim rewards.
-- **Proportional Distribution:** Higher scores get larger rewards from the pool.
-
-### 5. Modern Frontend
-- **Next.js + Vercel:** Fast, responsive dashboard.
-- **Wallet Integration:** RainbowKit + wagmi for seamless connection.
-- **Real-Time Stats:** Live monitoring of limits, progress, and leaderboard.
-- **Arc Theme:** Glassmorphism UI with grid background and gradient accents.
+### Reward Pool (Survivor Model)
+- Failed stakes are transferred to the `RewardPool` contract.
+- Users with score ≥ 100 can claim proportional rewards.
+- Incentivizes consistent, high-quality contributions.
 
 ## Architecture
 
 ```
-User → Frontend (Next.js/Vercel) → Smart Contract (Arc) ↔ AI Validator (Python)
-                                                              ↓
-                                                        RewardPool (penalties → rewards)
+User → Smart Contract (Arc) ↔ AI Validator (Python + GitHub API)
+                                ↓
+                          RewardPool
 ```
 
-| Component | Tech |
-|-----------|------|
-| Smart Contract | Solidity + OpenZeppelin |
+| Component | Technology |
+|-----------|------------|
+| Smart Contracts | Solidity + OpenZeppelin |
 | AI Validator | Python + web3.py + GitHub API |
-| Frontend | Next.js + Tailwind + RainbowKit |
 | Network | Arc Network (EVM-compatible) |
 
-## Live Deployment
+## Deployment
 
-**Network:** Arc Testnet (Chain ID: 5042002)
+**Network:** Arc Testnet (Chain ID: 5042002)  
 **RPC:** `https://rpc.testnet.arc.network`
 
 | Contract | Address |
@@ -68,7 +62,6 @@ User → Frontend (Next.js/Vercel) → Smart Contract (Arc) ↔ AI Validator (Py
 
 ## Quick Start
 
-### Backend (Contract + Agent)
 ```bash
 # Install dependencies
 npm install
@@ -76,37 +69,26 @@ pip install -r requirements.txt
 
 # Setup environment
 cp .env.example .env
-# Edit .env with your values (RPC, Private Key, GitHub Token)
+# Edit .env with RPC, Private Key, and GitHub Token
 
-# Deploy to Arc Testnet
+# Deploy contracts
 npx hardhat run scripts/deploy.js --network arcTestnet
 
-# Start AI validator agent
+# Start AI validator
 python agent/validator.py
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
 ```
 
 ## Project Structure
 
 ```
 ├── contracts/
-│   ├── DisciplineProtocol.sol   # Main contract (Staking, Scoring, Leaderboard)
-│   └── RewardPool.sol           # Penalty pool & reward distribution
+│   ├── DisciplineProtocol.sol   # Staking, scoring, leaderboard
+│   └── RewardPool.sol           # Penalty collection & distribution
 ├── agent/
-│   ├── validator.py             # AI GitHub validator
-│   └── contract_abi.json        # Auto-generated ABI
-├── frontend/
-│   ├── src/app/                 # Next.js pages & components
-│   └── src/lib/                 # Contract ABIs & config
+│   ├── validator.py             # GitHub validation & on-chain execution
+│   └── contract_abi.json        # Contract ABI
 ├── scripts/
 │   └── deploy.js                # Deployment script
-├── .env.example                 # Environment template
 └── hardhat.config.js
 ```
 
