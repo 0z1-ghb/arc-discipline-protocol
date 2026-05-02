@@ -19,7 +19,7 @@ const TASKS = [
     type: 'Daily',
     title: 'Bug Fix',
     desc: 'Fix small bugs and clean up code.',
-    reward: '10 Pts',
+    reward: '10 Arc Sparks',
     limit: '2 / day',
     color: 'text-arc-teal',
     border: 'border-arc-teal/30',
@@ -30,7 +30,7 @@ const TASKS = [
     type: 'Weekly',
     title: 'Feature / Refactor',
     desc: 'Add new features or improve structure.',
-    reward: '50 Pts',
+    reward: '50 Arc Sparks',
     limit: '1 / week',
     color: 'text-arc-blue',
     border: 'border-arc-blue/30',
@@ -41,7 +41,7 @@ const TASKS = [
     type: 'Monthly',
     title: 'New Project',
     desc: 'Develop a new module or project from scratch.',
-    reward: '200 Pts',
+    reward: '200 Arc Sparks',
     limit: '1 / month',
     color: 'text-arc-purple',
     border: 'border-arc-purple/30',
@@ -110,7 +110,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             {isConnected && (
               <Badge variant="outline" className="glass text-arc-teal border-arc-teal/30">
-                <Trophy className="w-3 h-3 mr-1" /> {score.toString()} pts • {level}
+                <Trophy className="w-3 h-3 mr-1" /> {score.toString()} Arc Sparks • {level}
               </Badge>
             )}
             <ConnectButton />
@@ -213,7 +213,7 @@ export default function Dashboard() {
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-white/60">Score Progress</span>
+                  <span className="text-white/60">Arc Sparks Progress</span>
                   <span className="text-white">{score.toString()} / 1000</span>
                 </div>
                 <Progress value={(Number(score) / 1000) * 100} className="h-2 bg-white/10" />
