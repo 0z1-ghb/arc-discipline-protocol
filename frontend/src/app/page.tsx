@@ -75,6 +75,9 @@ export default function Dashboard() {
   const { writeContract: deposit, data: depositHash } = useWriteContract();
   const { isLoading: isDepositing, isSuccess: isDeposited } = useWaitForTransactionReceipt({ hash: depositHash });
 
+  const { writeContract: claim, data: claimHash } = useWriteContract();
+  const { isLoading: isClaiming, isSuccess: isClaimed } = useWaitForTransactionReceipt({ hash: claimHash });
+
   const [approvingType, setApprovingType] = useState<number | null>(null);
 
   const handleApprove = async (type: number) => {
