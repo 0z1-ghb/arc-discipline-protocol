@@ -374,7 +374,17 @@ export default function Dashboard() {
                       <div>
                         <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
                         <div className="text-[10px] text-white/40">{user.level}</div>
-                      </div>
+          </div>
+
+          {/* Heatmap - Full Width Bottom */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="col-span-full"
+          >
+            <Heatmap score={Number(score)} />
+          </motion.div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-bold text-arc-teal">{user.score}</div>
@@ -391,72 +401,65 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Stats / Monitor - Small Block (1 col) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="col-span-1 glass rounded-xl p-6 flex flex-col justify-between"
-          >
-            <div>
-              <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-arc-blue" /> Stats
-              </h2>
-              <div className="grid grid-cols-3 gap-2 text-center mb-4">
-                <div className="p-2 rounded bg-white/5">
-                  <div className="text-lg font-bold text-arc-teal">{2 - dailyUsed}</div>
-                  <div className="text-[10px] text-white/50">Daily</div>
-                </div>
-                <div className="p-2 rounded bg-white/5">
-                  <div className="text-lg font-bold text-arc-blue">{1 - weeklyUsed}</div>
-                  <div className="text-[10px] text-white/50">Weekly</div>
-                </div>
-                <div className="p-2 rounded bg-white/5">
-                  <div className="text-lg font-bold text-arc-purple">{1 - monthlyUsed}</div>
-                  <div className="text-[10px] text-white/50">Monthly</div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs text-white/60">
-                <span>Progress</span>
-                <span>{score.toString()} / 1000</span>
-              </div>
-              <Progress value={(Number(score) / 1000) * 100} className="h-1.5 bg-white/10" />
-            </div>
-          </motion.div>
-
-          {/* Heatmap - Wide Block (2 cols) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="col-span-1 md:col-span-2"
-          >
-            <Heatmap score={Number(score)} />
-          </motion.div>
-
-          {/* Reward Pool - Small Block (1 col) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="col-span-1 glass rounded-xl p-6 flex flex-col justify-center items-center text-center border-arc-gold/20"
-          >
-            <Award className="w-8 h-8 text-arc-gold mb-2" />
-            <h3 className="font-bold text-arc-gold mb-1">Reward Pool</h3>
-            <p className="text-xs text-white/50 mb-3">Score {'>'} 100 to claim</p>
-            <Button 
-              size="sm"
-              className="w-full bg-arc-gold text-black hover:bg-arc-gold/90 font-bold text-xs"
-              onClick={handleClaim}
-              disabled={isClaiming || Number(score) < 100}
+          {/* Right Sidebar: Stats + Reward Pool */}
+          <div className="col-span-1 flex flex-col gap-4">
+            {/* Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="glass rounded-xl p-5 flex flex-col justify-between flex-1"
             >
-              {isClaiming ? 'Claiming...' : 'Claim Rewards'}
-            </Button>
-            {isClaimed && <p className="text-arc-teal text-[10px] mt-2">Claimed!</p>}
-          </motion.div>
+              <div>
+                <h2 className="text-base font-bold flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-4 h-4 text-arc-blue" /> Stats
+                </h2>
+                <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                  <div className="p-1.5 rounded bg-white/5">
+                    <div className="text-base font-bold text-arc-teal">{2 - dailyUsed}</div>
+                    <div className="text-[9px] text-white/50">Daily</div>
+                  </div>
+                  <div className="p-1.5 rounded bg-white/5">
+                    <div className="text-base font-bold text-arc-blue">{1 - weeklyUsed}</div>
+                    <div className="text-[9px] text-white/50">Weekly</div>
+                  </div>
+                  <div className="p-1.5 rounded bg-white/5">
+                    <div className="text-base font-bold text-arc-purple">{1 - monthlyUsed}</div>
+                    <div className="text-[9px] text-white/50">Monthly</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[10px] text-white/60">
+                  <span>Progress</span>
+                  <span>{score.toString()} / 1000</span>
+                </div>
+                <Progress value={(Number(score) / 1000) * 100} className="h-1 bg-white/10" />
+              </div>
+            </motion.div>
+
+            {/* Reward Pool - Compact */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="glass rounded-xl p-4 flex flex-col justify-center items-center text-center border-arc-gold/20"
+            >
+              <Award className="w-5 h-5 text-arc-gold mb-1.5" />
+              <h3 className="text-sm font-bold text-arc-gold mb-0.5">Reward Pool</h3>
+              <p className="text-[10px] text-white/50 mb-2">Score {'>'} 100</p>
+              <Button 
+                size="sm"
+                className="w-full bg-arc-gold/10 text-arc-gold hover:bg-arc-gold/20 border border-arc-gold/30 font-bold text-[10px] h-7"
+                onClick={handleClaim}
+                disabled={isClaiming || Number(score) < 100}
+              >
+                {isClaiming ? 'Claiming...' : 'Claim'}
+              </Button>
+              {isClaimed && <p className="text-arc-teal text-[9px] mt-1.5">Claimed!</p>}
+            </motion.div>
+          </div>
 
         </div>
       </main>
