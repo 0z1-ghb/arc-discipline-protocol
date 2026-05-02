@@ -254,7 +254,7 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Bento Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[minmax(180px,auto)]">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 auto-rows-min">
           
           {/* Hero Section - Full Width */}
           <motion.section 
@@ -295,14 +295,14 @@ export default function Dashboard() {
             </div>
           </motion.section>
 
-          {/* Task Cards - Large Block (2 cols, 2 rows) */}
+          {/* Tasks Column (5 cols) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="col-span-1 md:col-span-2 row-span-2 glass rounded-xl p-6 flex flex-col gap-4 overflow-y-auto"
+            className="col-span-full md:col-span-5 glass rounded-xl p-5 flex flex-col gap-4 max-h-[600px] overflow-y-auto custom-scrollbar"
           >
-            <h2 className="text-xl font-bold flex items-center gap-2">
+            <h2 className="text-xl font-bold flex items-center gap-2 sticky top-0 bg-[#020617]/80 backdrop-blur-sm py-2 z-10">
               <Zap className="w-5 h-5 text-arc-teal" /> Active Tasks
             </h2>
             <div className="grid grid-cols-1 gap-4">
@@ -353,12 +353,12 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Leaderboard - Tall Block (1 col, 2 rows) */}
+          {/* Leaderboard Column (4 cols) */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="col-span-1 md:col-span-1 row-span-2 glass rounded-xl p-6 flex flex-col overflow-hidden"
+            className="col-span-full md:col-span-4 glass rounded-xl p-5 flex flex-col h-[600px]"
           >
             <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
               <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
@@ -374,17 +374,7 @@ export default function Dashboard() {
                       <div>
                         <div className="text-xs font-mono text-white/80">{user.address.slice(0, 6)}...{user.address.slice(-4)}</div>
                         <div className="text-[10px] text-white/40">{user.level}</div>
-          </div>
-
-          {/* Heatmap - Full Width Bottom */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="col-span-full"
-          >
-            <Heatmap score={Number(score)} />
-          </motion.div>
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-bold text-arc-teal">{user.score}</div>
@@ -401,8 +391,8 @@ export default function Dashboard() {
             </div>
           </motion.div>
 
-          {/* Right Sidebar: Stats + Reward Pool */}
-          <div className="col-span-1 flex flex-col gap-4">
+          {/* Sidebar Column (3 cols) - Stats + Reward */}
+          <div className="col-span-full md:col-span-3 flex flex-col gap-4">
             {/* Stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -460,6 +450,16 @@ export default function Dashboard() {
               {isClaimed && <p className="text-arc-teal text-[9px] mt-1.5">Claimed!</p>}
             </motion.div>
           </div>
+
+          {/* Heatmap - Full Width Bottom */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="col-span-full"
+          >
+            <Heatmap score={Number(score)} />
+          </motion.div>
 
         </div>
       </main>
