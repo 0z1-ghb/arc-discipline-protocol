@@ -28,6 +28,7 @@ const TASKS = [
     limit: '2 / day',
     color: 'text-arc-teal',
     border: 'border-l-arc-teal',
+    bg: 'bg-arc-teal/5',
   },
   {
     id: 1,
@@ -38,6 +39,7 @@ const TASKS = [
     limit: '1 / week',
     color: 'text-arc-blue',
     border: 'border-l-arc-blue',
+    bg: 'bg-arc-blue/5',
   },
   {
     id: 2,
@@ -48,6 +50,7 @@ const TASKS = [
     limit: '1 / month',
     color: 'text-arc-purple',
     border: 'border-l-arc-purple',
+    bg: 'bg-arc-purple/5',
   },
 ];
 
