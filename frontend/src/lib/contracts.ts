@@ -10,6 +10,9 @@ export const PROTOCOL_ABI = [
   { inputs: [{ internalType: 'address', name: '_user', type: 'address' }], name: 'getUserLimits', outputs: [{ internalType: 'uint256', name: 'dailyCount', type: 'uint256' }, { internalType: 'uint256', name: 'weeklyCount', type: 'uint256' }, { internalType: 'uint256', name: 'monthlyCount', type: 'uint256' }], stateMutability: 'view', type: 'function' },
   { inputs: [{ internalType: 'uint256', name: '_commitmentId', type: 'uint256' }], name: 'getCommitment', outputs: [{ internalType: 'address', name: 'user', type: 'address' }, { internalType: 'uint256', name: 'amount', type: 'uint256' }, { internalType: 'uint8', name: 'taskType', type: 'uint8' }, { internalType: 'string', name: 'githubUsername', type: 'string' }, { internalType: 'uint256', name: 'createdAt', type: 'uint256' }, { internalType: 'uint256', name: 'deadline', type: 'uint256' }, { internalType: 'bool', name: 'completed', type: 'bool' }, { internalType: 'bool', name: 'failed', type: 'bool' }], stateMutability: 'view', type: 'function' },
   { inputs: [], name: 'commitmentCount', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'getUserCount', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], name: 'allUsers', outputs: [{ internalType: 'address', name: '', type: 'address' }], stateMutability: 'view', type: 'function' },
+  { inputs: [{ internalType: 'address', name: '', type: 'address' }], name: 'totalDeposited', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
 ] as const;
 
 export const POOL_ABI = [

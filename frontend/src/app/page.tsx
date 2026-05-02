@@ -1,17 +1,17 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { useState } from 'react';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap, Medal, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CONTRACTS, PROTOCOL_ABI, POOL_ABI } from '@/lib/contracts';
-import { parseUnits } from 'viem';
+import { parseUnits, formatUnits } from 'viem';
 
 const TASKS = [
   {
@@ -95,6 +95,72 @@ export default function Dashboard() {
   const dailyUsed = limits ? Number((limits as any)[0]) : 0;
   const weeklyUsed = limits ? Number((limits as any)[1]) : 0;
   const monthlyUsed = limits ? Number((limits as any)[2]) : 0;
+
+  // Leaderboard State
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const publicClient = usePublicClient();
+
+  useEffect(() => {
+    if (!publicClient) return;
+
+    const fetchLeaderboard = async () => {
+      try {
+        // 1. Get User Count
+        const count = await publicClient.readContract({
+          address: CONTRACTS.protocol,
+          abi: PROTOCOL_ABI,
+          functionName: 'getUserCount',
+        }) as bigint;
+
+        const userCount = Number(count);
+        if (userCount === 0) return;
+
+        const usersData = [];
+
+        // 2. Fetch Data for Each User
+        // Note: In a production app, we'd use multicall3. Here we loop for simplicity.
+        for (let i = 0; i < userCount; i++) {
+          const userAddress = await publicClient.readContract({
+            address: CONTRACTS.protocol,
+            abi: PROTOCOL_ABI,
+            functionName: 'allUsers',
+            args: [BigInt(i)],
+          }) as `0x${string}`;
+
+          const scoreRes = await publicClient.readContract({
+            address: CONTRACTS.protocol,
+            abi: PROTOCOL_ABI,
+            functionName: 'getScore',
+            args: [userAddress],
+          }) as [bigint, string];
+
+          const depositedRes = await publicClient.readContract({
+            address: CONTRACTS.protocol,
+            abi: PROTOCOL_ABI,
+            functionName: 'totalDeposited',
+            args: [userAddress],
+          }) as bigint;
+
+          usersData.push({
+            address: userAddress,
+            score: Number(scoreRes[0]),
+            level: scoreRes[1],
+            deposited: Number(formatUnits(depositedRes, 6)),
+          });
+        }
+
+        // 3. Sort by Score (Arc Sparks) Descending
+        usersData.sort((a, b) => b.score - a.score);
+        setLeaderboard(usersData);
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [publicClient]);
+
+  // Add a refresh button or interval if needed, but for now just on mount.
 
   return (
     <div className="min-h-screen text-white selection:bg-arc-teal/30">
@@ -236,6 +302,62 @@ export default function Dashboard() {
                 {isClaiming ? 'Claiming...' : 'Claim Rewards'}
               </Button>
               {isClaimed && <p className="text-arc-teal text-xs text-center">Reward claimed successfully!</p>}
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Leaderboard Section */}
+        <section>
+          <Card className="glass">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Medal className="w-5 h-5 text-arc-gold" /> Leaderboard
+              </CardTitle>
+              <CardDescription>Top developers ranked by Arc Sparks</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-white/50 uppercase bg-white/5">
+                    <tr>
+                      <th className="px-4 py-3 rounded-l-lg">Rank</th>
+                      <th className="px-4 py-3">User</th>
+                      <th className="px-4 py-3">Level</th>
+                      <th className="px-4 py-3 text-right">Arc Sparks</th>
+                      <th className="px-4 py-3 text-right rounded-r-lg">Total Deposited</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.length > 0 ? (
+                      leaderboard.map((user, index) => (
+                        <tr key={user.address} className="border-b border-white/5 hover:bg-white/5 transition">
+                          <td className="px-4 py-3 font-medium">
+                            {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs">
+                            {user.address.slice(0, 6)}...{user.address.slice(-4)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant="outline" className="text-xs border-white/10">{user.level}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-arc-teal">
+                            {user.score}
+                          </td>
+                          <td className="px-4 py-3 text-right text-white/70">
+                            {user.deposited.toFixed(2)} USDC
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-white/40">
+                          No users yet. Be the first to deposit!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </section>

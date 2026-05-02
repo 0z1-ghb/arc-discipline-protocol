@@ -35,6 +35,11 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
 
     mapping(address => UserLimits) public userLimits;
     mapping(address => uint256) public disciplineScores;
+    
+    // Leaderboard Data
+    mapping(address => uint256) public totalDeposited;
+    address[] public allUsers;
+    mapping(address => bool) public isUserRegistered;
 
     struct Commitment {
         address user;
@@ -113,6 +118,13 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         }
 
         require(usdc.transferFrom(msg.sender, address(this), _amount), "USDC transfer failed");
+
+        // Update Leaderboard Data
+        totalDeposited[msg.sender] += _amount;
+        if (!isUserRegistered[msg.sender]) {
+            allUsers.push(msg.sender);
+            isUserRegistered[msg.sender] = true;
+        }
 
         commitmentCount++;
         commitments[commitmentCount] = Commitment({
@@ -194,6 +206,10 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(_newRewardPool != address(0), "Invalid reward pool address");
         emit RewardPoolUpdated(rewardPool, _newRewardPool);
         rewardPool = _newRewardPool;
+    }
+
+    function getUserCount() external view returns (uint256) {
+        return allUsers.length;
     }
 
     function getCommitment(uint256 _commitmentId) external view returns (
