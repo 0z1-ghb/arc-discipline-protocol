@@ -4,7 +4,7 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet, Droplets } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet, Droplets, Twitter, Github, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -467,6 +467,40 @@ export default function Dashboard() {
           </Card>
         </section>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 mt-12">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-arc-teal to-arc-blue flex items-center justify-center">
+              <Shield className="w-3 h-3 text-black" />
+            </div>
+            <div className="text-sm text-white/60">
+              <span className="font-medium text-white">Arc Discipline</span>
+              <span className="mx-2">•</span>
+              © 2026 • Built on Arc
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <a href="https://docs.arc.network/" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1">
+              Docs <ExternalLink className="w-3 h-3" />
+            </a>
+            <a href="https://github.com/0z1-ghb/arc-discipline-protocol" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors flex items-center gap-1">
+              Audit <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="https://x.com/0z1_x" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white transition-colors">
+              <Twitter className="w-4 h-4" />
+            </a>
+            <a href="https://github.com/0z1-ghb" target="_blank" rel="noopener noreferrer" className="text-white/50 hover:text-white transition-colors">
+              <Github className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
