@@ -14,6 +14,9 @@ contract RewardPool is Ownable {
 
     // Minimum score required to claim rewards
     uint256 public constant MIN_SCORE_TO_CLAIM = 100;
+    
+    // Track last claim month per user (1 claim per month)
+    mapping(address => uint256) public lastClaimMonth;
 
     event RewardClaimed(address user, uint256 amount, uint256 score);
     event Deposited(address from, uint256 amount);
@@ -35,9 +38,14 @@ contract RewardPool is Ownable {
     // Formula: Reward is proportional to score, capped by pool balance
     // Simple logic: (PoolBalance * UserScore) / 1000
     // This ensures high scores get more, but pool doesn't drain instantly if many claim.
+    // Limit: 1 claim per calendar month.
     function claim() external {
         uint256 score = protocol.disciplineScores(msg.sender);
         require(score >= MIN_SCORE_TO_CLAIM, "Score too low");
+
+        // Check monthly limit (1 claim per 30-day period)
+        uint256 currentMonth = block.timestamp / 30 days;
+        require(currentMonth > lastClaimMonth[msg.sender], "Already claimed this month");
 
         uint256 balance = usdc.balanceOf(address(this));
         require(balance > 0, "Pool empty");
@@ -50,6 +58,9 @@ contract RewardPool is Ownable {
         // Cap reward at remaining balance
         if (reward > balance) reward = balance;
         require(reward > 0, "Reward too small");
+
+        // Update last claim month
+        lastClaimMonth[msg.sender] = currentMonth;
 
         require(usdc.transfer(msg.sender, reward), "Transfer failed");
         emit RewardClaimed(msg.sender, reward, score);
