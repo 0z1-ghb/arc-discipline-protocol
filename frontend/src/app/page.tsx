@@ -51,7 +51,7 @@ const TASKS = [
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
-  const [github, setGithub] = useState('');
+  const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
 
   // Web3 Hooks
@@ -82,7 +82,8 @@ export default function Dashboard() {
 
   const handleApprove = async (type: number) => {
     const amt = amounts[type];
-    if (!amt || !address) return;
+    const gh = githubs[type];
+    if (!amt || !gh || !address) return;
     setApprovingType(type);
     approve({
       address: CONTRACTS.usdc,
@@ -94,12 +95,13 @@ export default function Dashboard() {
 
   const handleDeposit = (type: number) => {
     const amt = amounts[type];
-    if (!amt || !github || !address) return;
+    const gh = githubs[type];
+    if (!amt || !gh || !address) return;
     deposit({
       address: CONTRACTS.protocol,
       abi: PROTOCOL_ABI,
       functionName: 'deposit',
-      args: [parseUnits(amt, 6), type, github],
+      args: [parseUnits(amt, 6), type, gh],
     });
   };
 
@@ -280,8 +282,8 @@ export default function Dashboard() {
                     <Input 
                       placeholder="GitHub Username" 
                       className="glass border-white/10 text-white placeholder:text-white/30"
-                      value={github}
-                      onChange={(e) => setGithub(e.target.value)}
+                      value={githubs[task.id]}
+                      onChange={(e) => setGithubs({...githubs, [task.id]: e.target.value})}
                     />
                     <Input 
                       type="number" 
@@ -301,7 +303,7 @@ export default function Dashboard() {
                         handleApprove(task.id);
                       }
                     }}
-                    disabled={isApproving || isDepositing || !github || !amounts[task.id]}
+                    disabled={isApproving || isDepositing || !githubs[task.id] || !amounts[task.id]}
                   >
                     {isDepositing ? 'Processing...' : isApproving ? 'Approving...' : isApproved && approvingType === task.id ? 'Deposit & Start' : 'Approve USDC'}
                   </Button>
