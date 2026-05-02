@@ -90,11 +90,11 @@ export default function Dashboard() {
     claim({ address: CONTRACTS.pool, abi: POOL_ABI, functionName: 'claim' });
   };
 
-  const score = scoreData ? (scoreData as any)[0] : 0;
+  const score = scoreData ? Number((scoreData as any)[0]) : 0;
   const level = scoreData ? (scoreData as any)[1] : 'Novice';
-  const dailyUsed = limits ? (limits as any)[0] : 0;
-  const weeklyUsed = limits ? (limits as any)[1] : 0;
-  const monthlyUsed = limits ? (limits as any)[2] : 0;
+  const dailyUsed = limits ? Number((limits as any)[0]) : 0;
+  const weeklyUsed = limits ? Number((limits as any)[1]) : 0;
+  const monthlyUsed = limits ? Number((limits as any)[2]) : 0;
 
   return (
     <div className="min-h-screen text-white selection:bg-arc-teal/30">
