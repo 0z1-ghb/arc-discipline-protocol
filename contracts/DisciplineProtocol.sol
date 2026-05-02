@@ -12,7 +12,12 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     address public rewardPool;
 
     uint256 public constant MAX_SCORE = 1000;
-    uint256 public constant SUCCESS_POINTS = 10;
+    
+    // Task-Specific Points
+    uint256 public constant DAILY_POINTS = 10;
+    uint256 public constant WEEKLY_POINTS = 50;
+    uint256 public constant MONTHLY_POINTS = 200;
+    
     uint256 public constant FAILURE_PENALTY = 20;
 
     // Task Types
@@ -133,7 +138,13 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         require(usdc.transfer(c.user, c.amount), "Refund failed");
 
         uint256 currentScore = disciplineScores[c.user];
-        uint256 newScore = currentScore + SUCCESS_POINTS;
+        uint256 points = 0;
+        
+        if (c.taskType == TaskType.Daily) points = DAILY_POINTS;
+        else if (c.taskType == TaskType.Weekly) points = WEEKLY_POINTS;
+        else if (c.taskType == TaskType.Monthly) points = MONTHLY_POINTS;
+        
+        uint256 newScore = currentScore + points;
         if (newScore > MAX_SCORE) newScore = MAX_SCORE;
         disciplineScores[c.user] = newScore;
 

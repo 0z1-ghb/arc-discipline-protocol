@@ -8,7 +8,13 @@ Users lock USDC into a smart contract for a personal goal. An AI agent monitors 
 
 ## Key Features
 
-### 1. Quality Filter (Anti-Spam)
+### 1. Task Categories & Scoring
+Users choose a task category when depositing. Points are awarded based on difficulty:
+- **Daily (Bug Fixes):** 10 Points (Max 2 per day)
+- **Weekly (Features/Refactors):** 50 Points (Max 1 per week)
+- **Monthly (New Development):** 200 Points (Max 1 per month)
+
+### 2. Quality Filter (Anti-Spam)
 The agent uses a rule-based filter to ensure only real code contributions are rewarded:
 - **File Extension:** Only code files (`.py`, `.js`, `.sol`, `.ts`, etc.) are accepted. Text/Image files are ignored.
 - **Keywords:** Commits must contain programming keywords (`function`, `import`, `def`, `class`, etc.).
