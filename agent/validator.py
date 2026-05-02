@@ -41,7 +41,7 @@ MONTHLY_KEYWORDS = {'new', 'create', 'init', 'build', 'launch', 'develop', 'star
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("agent.log"), logging.StreamHandler()],
+    handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -270,55 +270,48 @@ def main():
     if not OFFLINE_MODE:
         w3 = connect_web3()
     
-    logger.info(f"Check interval: 60s")
     logger.info(f"Quality Filter: Active (Extensions + Keywords + Task Type)")
     logger.info(f"Auto-Fail: Active (24h Deadline)")
     
-    while True:
-        try:
-            if w3:
-                commitment_id, task_type = get_latest_pending_id(w3)
+    try:
+        if w3:
+            commitment_id, task_type = get_latest_pending_id(w3)
+            
+            if commitment_id > 0:
+                logger.info(f"Pending task found: ID {commitment_id}, Type: {task_type}")
                 
-                if commitment_id > 0:
-                    logger.info(f"Pending task found: ID {commitment_id}, Type: {task_type}")
-                    
-                    contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
-                    status = contract.functions.getCommitment(commitment_id).call()
-                    
-                    username = status[3]
-                    deadline = status[5] # uint256 deadline
-                    
-                    logger.info(f"Checking GitHub activity for: {username} (Deadline: {datetime.fromtimestamp(deadline)})")
-                    
-                    # Check if deadline has passed
-                    if time.time() > deadline:
-                        logger.warning(f"Task {commitment_id} deadline passed! Triggering failTask.")
-                        if not OFFLINE_MODE:
-                            call_fail_task(w3, commitment_id)
-                        else:
-                            logger.info("[OFFLINE] failTask would be called.")
+                contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
+                status = contract.functions.getCommitment(commitment_id).call()
+                
+                username = status[3]
+                deadline = status[5] # uint256 deadline
+                
+                logger.info(f"Checking GitHub activity for: {username} (Deadline: {datetime.fromtimestamp(deadline)})")
+                
+                # Check if deadline has passed
+                if time.time() > deadline:
+                    logger.warning(f"Task {commitment_id} deadline passed! Triggering failTask.")
+                    if not OFFLINE_MODE:
+                        call_fail_task(w3, commitment_id)
                     else:
-                        # Deadline not passed, check for commits
-                        if check_github_commit(username, status[4], task_type): # status[4] is createdAt
-                            if OFFLINE_MODE:
-                                logger.info("[OFFLINE] completeTask would be called.")
-                            else:
-                                call_complete_task(w3, commitment_id)
-                        else:
-                            logger.info("No valid code commit found yet. Waiting...")
+                        logger.info("[OFFLINE] failTask would be called.")
                 else:
-                    logger.info("No pending tasks.")
+                    # Deadline not passed, check for commits
+                    if check_github_commit(username, status[4], task_type): # status[4] is createdAt
+                        if OFFLINE_MODE:
+                            logger.info("[OFFLINE] completeTask would be called.")
+                        else:
+                            call_complete_task(w3, commitment_id)
+                    else:
+                        logger.info("No valid code commit found yet. Waiting for next run...")
             else:
-                logger.info("Offline mode: Blockchain check skipped.")
+                logger.info("No pending tasks.")
+        else:
+            logger.info("Offline mode: Blockchain check skipped.")
             
-            time.sleep(60)
-            
-        except KeyboardInterrupt:
-            logger.info("Agent stopping...")
-            break
-        except Exception as e:
-            logger.error(f"Loop error: {e}")
-            time.sleep(60)
+    except Exception as e:
+        logger.error(f"Agent error: {e}")
+        raise
 
 if __name__ == "__main__":
     main()
