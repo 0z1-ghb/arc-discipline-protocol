@@ -195,8 +195,13 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-3">
             {isConnected && (
-              <div className="pill">
-                <Trophy className="w-3 h-3" /> {score.toString()} pts
+              <div className="relative group">
+                <div className="absolute inset-0 bg-arc-teal/20 rounded-full blur-md group-hover:bg-arc-teal/30 transition-all" />
+                <div className="relative pill bg-arc-teal/10 text-arc-teal border-arc-teal/40 shadow-[0_0_15px_rgba(0,229,153,0.15)]">
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span className="font-bold text-sm">{score.toString()}</span>
+                  <span className="text-xs text-arc-teal/70 ml-0.5">pts</span>
+                </div>
               </div>
             )}
             <ConnectButton.Custom>
