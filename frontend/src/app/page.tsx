@@ -4,13 +4,13 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, GitCommit, Shield, Zap, CheckCircle2 } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CONTRACTS, PROTOCOL_ABI, POOL_ABI, ERC20_ABI } from '@/lib/contracts';
+import { CONTRACTS, PROTOCOL_ABI, POOL_ABI } from '@/lib/contracts';
 import { parseUnits } from 'viem';
 
 const TASKS = [
@@ -24,7 +24,6 @@ const TASKS = [
     color: 'text-arc-teal',
     border: 'border-arc-teal/30',
     bg: 'bg-arc-teal/5',
-    keyword: 'fix',
   },
   {
     id: 1,
@@ -36,7 +35,6 @@ const TASKS = [
     color: 'text-arc-blue',
     border: 'border-arc-blue/30',
     bg: 'bg-arc-blue/5',
-    keyword: 'feat',
   },
   {
     id: 2,
@@ -48,7 +46,6 @@ const TASKS = [
     color: 'text-arc-purple',
     border: 'border-arc-purple/30',
     bg: 'bg-arc-purple/5',
-    keyword: 'new',
   },
 ];
 
@@ -192,8 +189,8 @@ export default function Dashboard() {
         </section>
 
         {/* Monitor & Stats */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="glass lg:col-span-2">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-arc-teal" /> Active Monitor
@@ -224,44 +221,21 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="glass">
+          {/* Claim Section */}
+          <Card className="glass border-arc-gold/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GitCommit className="w-5 h-5 text-arc-blue" /> Activity
-              </CardTitle>
+              <CardTitle className="text-arc-gold">Reward Pool</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition">
-                    <CheckCircle2 className="w-4 h-4 text-arc-teal" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">fix: login validation bug</p>
-                      <p className="text-xs text-white/40">2 hours ago</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs border-arc-teal/30 text-arc-teal">+10</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Claim Section */}
-        <section className="text-center py-8">
-          <Card className="glass max-w-2xl mx-auto border-arc-gold/20">
-            <CardContent className="py-8 space-y-4">
-              <h3 className="text-2xl font-bold text-arc-gold">Reward Pool</h3>
-              <p className="text-white/60">Claim rewards from the pool if your score is above 100.</p>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-white/60">Claim rewards from the pool if your score is above 100.</p>
               <Button 
-                size="lg" 
-                className="bg-arc-gold text-black hover:bg-arc-gold/90 font-bold px-8"
+                className="w-full bg-arc-gold text-black hover:bg-arc-gold/90 font-bold"
                 onClick={handleClaim}
                 disabled={isClaiming || Number(score) < 100}
               >
                 {isClaiming ? 'Claiming...' : 'Claim Rewards'}
               </Button>
-              {isClaimed && <p className="text-arc-teal text-sm">Reward claimed successfully!</p>}
+              {isClaimed && <p className="text-arc-teal text-xs text-center">Reward claimed successfully!</p>}
             </CardContent>
           </Card>
         </section>
