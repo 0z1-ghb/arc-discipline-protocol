@@ -9,34 +9,47 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
     IERC20 public immutable usdc;
 
     address public validator;
-    address public rewardPool; // Address of the RewardPool contract
+    address public rewardPool;
 
     uint256 public constant MAX_SCORE = 1000;
     uint256 public constant SUCCESS_POINTS = 10;
     uint256 public constant FAILURE_PENALTY = 20;
 
+    // Task Types
+    enum TaskType { Daily, Weekly, Monthly }
+
+    // User Limits & Quotas
+    struct UserLimits {
+        uint256 dailyCount;
+        uint256 lastDailyReset;
+        uint256 weeklyCount;
+        uint256 lastWeeklyReset;
+        uint256 monthlyCount;
+        uint256 lastMonthlyReset;
+    }
+
+    mapping(address => UserLimits) public userLimits;
     mapping(address => uint256) public disciplineScores;
 
     struct Commitment {
         address user;
         uint256 amount;
-        string goal;
+        TaskType taskType;
         string githubUsername;
         uint256 createdAt;
-        uint256 deadline; // 24 hours from creation
+        uint256 deadline;
         bool completed;
         bool failed;
-        bool refunded;
     }
 
     mapping(uint256 => Commitment) public commitments;
     uint256 public commitmentCount;
 
-    event Deposited(uint256 commitmentId, address user, uint256 amount, string goal, string githubUsername);
+    event Deposited(uint256 commitmentId, address user, uint256 amount, TaskType taskType, string githubUsername);
     event TaskCompleted(uint256 commitmentId, address user, uint256 newScore);
     event TaskFailed(uint256 commitmentId, address user, uint256 penaltyAmount, uint256 newScore);
     event ValidatorUpdated(address oldValidator, address newValidator);
-    event PenaltyAddressUpdated(address oldPool, address newPool);
+    event RewardPoolUpdated(address oldPool, address newPool);
 
     constructor(address _usdc, address _validator, address _rewardPool) Ownable(msg.sender) {
         require(_usdc != address(0), "Invalid USDC address");
@@ -52,10 +65,47 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         _;
     }
 
-    function deposit(uint256 _amount, string calldata _goal, string calldata _githubUsername) external nonReentrant {
+    function _resetLimits(address user) internal {
+        UserLimits storage limits = userLimits[user];
+        uint256 now = block.timestamp;
+
+        // Daily Reset (24 hours)
+        if (now >= limits.lastDailyReset + 24 hours) {
+            limits.dailyCount = 0;
+            limits.lastDailyReset = now;
+        }
+
+        // Weekly Reset (7 days)
+        if (now >= limits.lastWeeklyReset + 7 days) {
+            limits.weeklyCount = 0;
+            limits.lastWeeklyReset = now;
+        }
+
+        // Monthly Reset (30 days)
+        if (now >= limits.lastMonthlyReset + 30 days) {
+            limits.monthlyCount = 0;
+            limits.lastMonthlyReset = now;
+        }
+    }
+
+    function deposit(uint256 _amount, TaskType _taskType, string calldata _githubUsername) external nonReentrant {
         require(_amount > 0, "Amount must be greater than 0");
-        require(bytes(_goal).length > 0, "Goal cannot be empty");
         require(bytes(_githubUsername).length > 0, "GitHub username cannot be empty");
+
+        _resetLimits(msg.sender);
+        UserLimits storage limits = userLimits[msg.sender];
+
+        // Check Quotas
+        if (_taskType == TaskType.Daily) {
+            require(limits.dailyCount < 2, "Daily limit reached (2/2)");
+            limits.dailyCount++;
+        } else if (_taskType == TaskType.Weekly) {
+            require(limits.weeklyCount < 1, "Weekly limit reached (1/1)");
+            limits.weeklyCount++;
+        } else if (_taskType == TaskType.Monthly) {
+            require(limits.monthlyCount < 1, "Monthly limit reached (1/1)");
+            limits.monthlyCount++;
+        }
 
         require(usdc.transferFrom(msg.sender, address(this), _amount), "USDC transfer failed");
 
@@ -63,16 +113,15 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         commitments[commitmentCount] = Commitment({
             user: msg.sender,
             amount: _amount,
-            goal: _goal,
+            taskType: _taskType,
             githubUsername: _githubUsername,
             createdAt: block.timestamp,
-            deadline: block.timestamp + 24 hours, // 24 saat süre
+            deadline: block.timestamp + 24 hours,
             completed: false,
-            failed: false,
-            refunded: false
+            failed: false
         });
 
-        emit Deposited(commitmentCount, msg.sender, _amount, _goal, _githubUsername);
+        emit Deposited(commitmentCount, msg.sender, _amount, _taskType, _githubUsername);
     }
 
     function completeTask(uint256 _commitmentId) external onlyValidator {
@@ -115,6 +164,15 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         else level = "Novice";
     }
 
+    function getUserLimits(address _user) external view returns (
+        uint256 dailyCount,
+        uint256 weeklyCount,
+        uint256 monthlyCount
+    ) {
+        UserLimits storage limits = userLimits[_user];
+        return (limits.dailyCount, limits.weeklyCount, limits.monthlyCount);
+    }
+
     function setValidator(address _newValidator) external onlyOwner {
         require(_newValidator != address(0), "Invalid validator address");
         emit ValidatorUpdated(validator, _newValidator);
@@ -123,22 +181,21 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
 
     function setRewardPool(address _newRewardPool) external onlyOwner {
         require(_newRewardPool != address(0), "Invalid reward pool address");
-        emit PenaltyAddressUpdated(rewardPool, _newRewardPool);
+        emit RewardPoolUpdated(rewardPool, _newRewardPool);
         rewardPool = _newRewardPool;
     }
 
     function getCommitment(uint256 _commitmentId) external view returns (
         address user,
         uint256 amount,
-        string memory goal,
+        TaskType taskType,
         string memory githubUsername,
         uint256 createdAt,
         uint256 deadline,
         bool completed,
-        bool failed,
-        bool refunded
+        bool failed
     ) {
         Commitment storage c = commitments[_commitmentId];
-        return (c.user, c.amount, c.goal, c.githubUsername, c.createdAt, c.deadline, c.completed, c.failed, c.refunded);
+        return (c.user, c.amount, c.taskType, c.githubUsername, c.createdAt, c.deadline, c.completed, c.failed);
     }
 }

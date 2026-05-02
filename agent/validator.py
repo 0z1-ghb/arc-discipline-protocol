@@ -20,9 +20,19 @@ CONTRACT_ADDRESS = os.getenv("CONTRACT_ADDRESS", "0xYourContractAddressHere")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
+# Task Types (Matches Solidity Enum)
+TASK_TYPE_DAILY = 0   # Bug Fixes
+TASK_TYPE_WEEKLY = 1  # Feature/Completion
+TASK_TYPE_MONTHLY = 2 # New Development
+
 # Rule-Based Quality Filter Constants
 VALID_EXTENSIONS = {'.py', '.js', '.ts', '.jsx', '.tsx', '.sol', '.rs', '.go', '.java', '.cpp', '.c', '.h', '.html', '.css', '.scss'}
 CODE_KEYWORDS = {'function', 'def', 'class', 'import', 'return', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'struct', 'fn', 'pub', 'use', 'async', 'await', 'export'}
+
+# Task-Specific Keywords
+DAILY_KEYWORDS = {'fix', 'bug', 'patch', 'resolve', 'hotfix', 'repair', 'correct'}
+WEEKLY_KEYWORDS = {'feat', 'add', 'update', 'implement', 'refactor', 'improve', 'enhance'}
+MONTHLY_KEYWORDS = {'new', 'create', 'init', 'build', 'launch', 'develop', 'start'}
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -61,24 +71,24 @@ def connect_web3():
 # Blockchain Operations
 # ---------------------------------------------------------------------------
 
-def get_latest_pending_id(w3) -> int:
-    """Finds the latest pending commitment ID from the blockchain."""
+def get_latest_pending_id(w3) -> tuple:
+    """Finds the latest pending commitment ID and its type from the blockchain."""
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
     try:
         total = contract.functions.commitmentCount().call()
         if total == 0:
-            return 0
+            return (0, -1)
         
         for i in range(total, 0, -1):
             status = contract.functions.getCommitment(i).call()
-            # status: user, amount, goal, githubUsername, createdAt, deadline, completed, failed, refunded
+            # status: user, amount, taskType, githubUsername, createdAt, deadline, completed, failed
             # index 6: completed, index 7: failed
             if not status[6] and not status[7]:
-                return i
-        return 0
+                return (i, status[2]) # Return ID and TaskType
+        return (0, -1)
     except Exception as e:
         logger.error(f"Error finding ID: {e}")
-        return 0
+        return (0, -1)
 
 def call_complete_task(w3, commitment_id):
     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
@@ -152,9 +162,23 @@ def is_valid_code_change(files):
             
     return False
 
-def check_github_commit(username: str, task_created_at: int) -> bool:
+def check_task_keywords(commit_message: str, task_type: int) -> bool:
+    """Checks if commit message matches the task type keywords."""
+    msg_lower = commit_message.lower()
+    
+    if task_type == TASK_TYPE_DAILY:
+        return any(kw in msg_lower for kw in DAILY_KEYWORDS)
+    elif task_type == TASK_TYPE_WEEKLY:
+        return any(kw in msg_lower for kw in WEEKLY_KEYWORDS)
+    elif task_type == TASK_TYPE_MONTHLY:
+        return any(kw in msg_lower for kw in MONTHLY_KEYWORDS)
+    
+    return False
+
+def check_github_commit(username: str, task_created_at: int, task_type: int) -> bool:
     """
     Checks if the user has pushed a valid code commit AFTER the task was created.
+    Validates based on task type (Daily/Weekly/Monthly).
     """
     if not GITHUB_TOKEN:
         logger.warning("GITHUB_TOKEN not set. Skipping check.")
@@ -206,16 +230,22 @@ def check_github_commit(username: str, task_created_at: int) -> bool:
                                     logger.info(f"Commit {sha} is older than task creation. Ignored.")
                                     continue
 
+                                # 2. Task Type Keyword Check
+                                commit_msg = commit_data['commit']['message']
+                                if not check_task_keywords(commit_msg, task_type):
+                                    logger.info(f"Commit {sha} rejected: Message '{commit_msg}' does not match task type {task_type}.")
+                                    continue
+
                                 stats = commit_data.get('stats', {})
                                 total_changes = stats.get('total', 0)
                                 
-                                # Check Code Quality (Extension + Keywords)
+                                # 3. Check Code Quality (Extension + Keywords)
                                 files = commit_data.get('files', [])
                                 if not is_valid_code_change(files):
                                     logger.info(f"Commit {sha} rejected: No valid code changes found (spam filter).")
                                     continue
 
-                                logger.info(f"Valid code commit found! SHA: {sha}, Lines: {total_changes}")
+                                logger.info(f"Valid code commit found! SHA: {sha}, Type: {task_type}, Lines: {total_changes}")
                                 return True
                         except Exception as e:
                             logger.warning(f"Could not fetch commit details: {e}")
@@ -241,16 +271,16 @@ def main():
         w3 = connect_web3()
     
     logger.info(f"Check interval: 60s")
-    logger.info(f"Quality Filter: Active (Extensions + Keywords)")
+    logger.info(f"Quality Filter: Active (Extensions + Keywords + Task Type)")
     logger.info(f"Auto-Fail: Active (24h Deadline)")
     
     while True:
         try:
             if w3:
-                commitment_id = get_latest_pending_id(w3)
+                commitment_id, task_type = get_latest_pending_id(w3)
                 
                 if commitment_id > 0:
-                    logger.info(f"Pending task found: ID {commitment_id}")
+                    logger.info(f"Pending task found: ID {commitment_id}, Type: {task_type}")
                     
                     contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=CONTRACT_ABI)
                     status = contract.functions.getCommitment(commitment_id).call()
@@ -269,7 +299,7 @@ def main():
                             logger.info("[OFFLINE] failTask would be called.")
                     else:
                         # Deadline not passed, check for commits
-                        if check_github_commit(username, status[4]): # status[4] is createdAt
+                        if check_github_commit(username, status[4], task_type): # status[4] is createdAt
                             if OFFLINE_MODE:
                                 logger.info("[OFFLINE] completeTask would be called.")
                             else:
