@@ -1,10 +1,10 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi';
+import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, usePublicClient, useBalance } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award } from 'lucide-react';
+import { Trophy, Clock, Shield, Zap, Medal, TrendingUp, CheckCircle2, Lock, Award, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,7 @@ const TASKS = [
 
 export default function Dashboard() {
   const { address, isConnected } = useAccount();
+  const { data: balance } = useBalance({ address });
   const [githubs, setGithubs] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
   const [amounts, setAmounts] = useState<Record<number, string>>({ 0: '', 1: '', 2: '' });
 
@@ -192,13 +193,47 @@ export default function Dashboard() {
             </div>
             <span className="font-bold text-lg tracking-tight">ARC DISCIPLINE</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {isConnected && (
               <div className="pill">
                 <Trophy className="w-3 h-3" /> {score.toString()} pts
               </div>
             )}
-            <ConnectButton />
+            <ConnectButton.Custom>
+              {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                const ready = mounted;
+                const connected = ready && account && chain;
+                return (
+                  <div
+                    {...(!ready ? { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none', userSelect: 'none' } } : {})}
+                  >
+                    {(() => {
+                      if (!connected) {
+                        return (
+                          <button onClick={openConnectModal} className="pill bg-arc-teal/10 text-arc-teal border-arc-teal/30 hover:bg-arc-teal/20 transition-colors">
+                            <Wallet className="w-3 h-3" /> Connect Wallet
+                          </button>
+                        );
+                      }
+                      if (chain.unsupported) {
+                        return (
+                          <button onClick={openChainModal} className="pill bg-red-500/10 text-red-400 border-red-500/30">
+                            Wrong network
+                          </button>
+                        );
+                      }
+                      return (
+                        <button onClick={openAccountModal} className="pill hover:bg-white/10 transition-colors">
+                          {balance && <span className="text-white/80">{parseFloat(balance.formatted).toFixed(2)} USDC</span>}
+                          <span className="w-px h-3 bg-white/20 mx-1" />
+                          <span className="text-white/60">{account.displayName}</span>
+                        </button>
+                      );
+                    })()}
+                  </div>
+                );
+              }}
+            </ConnectButton.Custom>
           </div>
         </div>
       </nav>
