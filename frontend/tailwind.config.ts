@@ -9,6 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        border: "hsl(var(--border))",
         arc: {
           bg: "#020617",
           card: "rgba(15, 23, 42, 0.4)",
