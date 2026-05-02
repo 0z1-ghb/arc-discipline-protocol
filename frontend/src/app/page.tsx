@@ -526,12 +526,15 @@ export default function Dashboard() {
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center text-sm font-bold">
                             {user.address.slice(2, 4)}
                           </div>
-                          <div>
-                            <div className="text-sm font-medium text-white group-hover:text-arc-blue transition-colors">
-                              {user.address}
-                            </div>
-                            <div className="text-xs text-white/40">{user.level}</div>
-                          </div>
+                           <div>
+                             <div className="text-sm font-medium text-white group-hover:text-arc-blue transition-colors flex items-center gap-2">
+                               {user.address.slice(0, 6)}...{user.address.slice(-4)}
+                               {address && user.address.toLowerCase() === address.toLowerCase() && (
+                                 <Badge className="bg-arc-blue/20 text-arc-blue border-arc-blue/30 text-[10px] h-4 px-1">You</Badge>
+                               )}
+                             </div>
+                             <div className="text-xs text-white/40">{user.level}</div>
+                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-lg font-bold text-arc-teal">{user.score.toLocaleString()}</div>
