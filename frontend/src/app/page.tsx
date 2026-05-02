@@ -66,6 +66,7 @@ export default function Dashboard() {
   const [defaultGithub, setDefaultGithub] = useState('');
   const [copied, setCopied] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [approvingType, setApprovingType] = useState<number | null>(null);
 
   // Load saved GitHub username from localStorage when wallet connects
   useEffect(() => {
