@@ -478,7 +478,7 @@ export default function Dashboard() {
             <div className="text-sm text-white/60">
               <span className="font-medium text-white">Arc Discipline</span>
               <span className="mx-2">•</span>
-              © 2026 • Built on Arc
+              © 2026 • Build on Arc
             </div>
           </div>
           
