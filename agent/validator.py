@@ -104,7 +104,7 @@ def call_complete_task(w3, commitment_id):
     })
     
     signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     
     if receipt.status == 1:
@@ -127,7 +127,7 @@ def call_fail_task(w3, commitment_id):
     })
     
     signed = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+    tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     
     if receipt.status == 1:
