@@ -193,7 +193,18 @@ contract DisciplineProtocol is Ownable, ReentrancyGuard {
         uint256 monthlyCount
     ) {
         UserLimits storage limits = userLimits[_user];
-        return (limits.dailyCount, limits.weeklyCount, limits.monthlyCount);
+        uint256 now = block.timestamp;
+
+        uint256 dCount = limits.dailyCount;
+        if (now >= limits.lastDailyReset + 24 hours) dCount = 0;
+
+        uint256 wCount = limits.weeklyCount;
+        if (now >= limits.lastWeeklyReset + 7 days) wCount = 0;
+
+        uint256 mCount = limits.monthlyCount;
+        if (now >= limits.lastMonthlyReset + 30 days) mCount = 0;
+
+        return (dCount, wCount, mCount);
     }
 
     function setValidator(address _newValidator) external onlyOwner {
